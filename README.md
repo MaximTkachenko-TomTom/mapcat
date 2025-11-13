@@ -7,7 +7,7 @@ A command-line tool for visualizing geographic data from Android logcat in real-
 `mapcat` receives geographic data piped from `adb logcat` and displays points, lines, and polygons on a live web map.
 
 ```bash
-adb logcat Mapcat:* -s | mapcat
+adb logcat -v raw -s Mapcat | mapcat
 ```
 
 ## Tech Stack
