@@ -5,7 +5,7 @@ Build a Python CLI that reads Android logcat (tag: Mapcat), parses geographic co
 
 ## Phase 1: Project Scaffold
 
-### 1.1 Project Structure
+### 1.1 Project Structure ✅ DONE
 Create directory structure:
 ```
 mapcat/
@@ -27,16 +27,16 @@ mapcat/
 └── README.md (already exists)
 ```
 
-### 1.2 Dependencies
+### 1.2 Dependencies ✅ DONE
 Create `requirements.txt`:
 ```
 websockets>=11.0
 ```
 
-### 1.3 Entry Point (main.py)
+### 1.3 Entry Point (main.py) ✅ DONE
 - Parse CLI arguments:
-  - `--port` (default: 8080)
-  - `--no-open` (skip auto-opening browser)
+    - `--port` (default: 8080)
+    - `--no-open` (skip auto-opening browser)
 - Start HTTP + WebSocket server
 - Open browser to `http://localhost:8080`
 - Read stdin line-by-line in async loop
