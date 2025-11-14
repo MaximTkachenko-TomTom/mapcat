@@ -23,7 +23,9 @@
     }).addTo(map);
 
     // WebSocket client
-    var ws_url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+    // Connect to WebSocket on port+1
+    var ws_port = (location.port ? (parseInt(location.port) + 1) : 8081);
+    var ws_url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + ':' + ws_port + '/ws';
     var ws = new WebSocket(ws_url);
 
     ws.onopen = function() {
