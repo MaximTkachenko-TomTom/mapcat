@@ -23,19 +23,18 @@ class StaticHandler(SimpleHTTPRequestHandler):
 clients = set()
 
 async def broadcast(message):
-	# Broadcast message to all connected clients
-	for client in clients:
-		if client.open:
-			await client.send(message)
+	"""Broadcast message to all connected WebSocket clients."""
+	if clients:
+		# Use websockets.broadcast for efficient sending
+		websockets.broadcast(clients, message)
 
 async def ws_handler(websocket):
+	"""Handle WebSocket connections."""
 	clients.add(websocket)
 	try:
 		async for message in websocket:
-			# Echo received message to all clients (for now)
-			for client in clients:
-				if client.open:
-					await client.send(message)
+			# Client sent a message (currently not used, but kept for future)
+			pass
 	finally:
 		clients.remove(websocket)
 
