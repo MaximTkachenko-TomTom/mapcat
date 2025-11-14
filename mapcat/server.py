@@ -28,7 +28,7 @@ async def broadcast(message):
 		if client.open:
 			await client.send(message)
 
-async def ws_handler(websocket, path):
+async def ws_handler(websocket):
 	clients.add(websocket)
 	try:
 		async for message in websocket:

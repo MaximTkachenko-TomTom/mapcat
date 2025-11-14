@@ -40,11 +40,13 @@ def main():
 		print(f"Opening browser at {url}")
 		webbrowser.open(url)
 
+
+
 	# Start WebSocket server and stdin loop
 	async def runner():
-		ws_task = asyncio.create_task(server.start_ws_server(port))
-		stdin_task = asyncio.create_task(stdin_broadcast_loop())
-		await asyncio.gather(ws_task, stdin_task)
+		ws_server = await server.start_ws_server(port)
+		async with ws_server:
+			await stdin_broadcast_loop()
 
 	asyncio.run(runner())
 
