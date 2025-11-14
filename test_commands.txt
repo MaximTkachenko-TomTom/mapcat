@@ -1,0 +1,6 @@
+add-point (52.5,13.4) id=start color=red label="Start Point"
+add-polyline (52.5,13.4);(52.6,13.5);(52.7,13.6) id=route color=blue width=4
+add-polygon (52.1,13.1);(52.2,13.2);(52.15,13.15) color=green opacity=0.5
+add-point (52.52,13.41) color=yellow
+remove id=start
+clear
