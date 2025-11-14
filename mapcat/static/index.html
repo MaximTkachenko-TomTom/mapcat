@@ -186,6 +186,7 @@
         } else if (msg.type === 'polyline') {
             var width = params.width ? parseInt(params.width) : 3;
             var opacity = params.opacity ? parseFloat(params.opacity) : 1.0;
+            var markerSize = params.markers !== undefined ? parseFloat(params.markers) : 1.1;
             
             // Create a layer group to hold both the line and point markers
             var layerGroup = L.layerGroup();
@@ -198,18 +199,20 @@
             });
             layerGroup.addLayer(line);
             
-            // Add circle markers at each point
-            var markerRadius = width * 1.1;
-            msg.coords.forEach(function(coord) {
-                var marker = L.circleMarker(coord, {
-                    radius: markerRadius,
-                    color: color,
-                    fillColor: color,
-                    fillOpacity: 1.0,
-                    weight: 2
+            // Add circle markers at each point (if markers > 0)
+            if (markerSize > 0) {
+                var markerRadius = width * markerSize;
+                msg.coords.forEach(function(coord) {
+                    var marker = L.circleMarker(coord, {
+                        radius: markerRadius,
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 1.0,
+                        weight: 2
+                    });
+                    layerGroup.addLayer(marker);
                 });
-                layerGroup.addLayer(marker);
-            });
+            }
             
             layer = layerGroup;
             layer.addTo(map);
