@@ -5,19 +5,20 @@ Entry point for mapcat CLI.
 import argparse
 import sys
 import webbrowser
-from mapcat import server
+import asyncio
+import json
+from mapcat import server, parser
+from mapcat.state import State
+from mapcat.commands import COMMAND_HANDLERS
 
 def parse_args():
-	parser = argparse.ArgumentParser(description="Mapcat CLI")
-	parser.add_argument("--port", type=int, default=8080, help="Port for HTTP/WebSocket server (default: 8080)")
-	parser.add_argument("--no-open", action="store_true", help="Do not auto-open browser")
-	return parser.parse_args()
+	parser_arg = argparse.ArgumentParser(description="Mapcat CLI")
+	parser_arg.add_argument("--port", type=int, default=8080, help="Port for HTTP/WebSocket server (default: 8080)")
+	parser_arg.add_argument("--no-open", action="store_true", help="Do not auto-open browser")
+	return parser_arg.parse_args()
 
 
-import asyncio
-import os
-
-async def stdin_broadcast_loop(is_tty):
+async def stdin_broadcast_loop(is_tty, state):
 	"""
 	Read stdin and broadcast lines.
 	If is_tty, run in REPL mode with prompts.
@@ -47,16 +48,38 @@ async def stdin_broadcast_loop(is_tty):
 			if not line:
 				continue
 			
-			# Broadcast command
-			await server.broadcast(line)
+			# Parse command
+			parsed = parser.parse_command(line)
+			if not parsed:
+				if is_tty:
+					print("< ERROR: Invalid command")
+				continue  # Parser already logged error
 			
-			# Echo response in REPL mode
-			if is_tty:
-				print(f"< OK {line}")
+			# Get handler
+			handler = COMMAND_HANDLERS.get(parsed['cmd'])
+			if not handler:
+				_log_error(f"Unknown command: {parsed['cmd']}")
+				if is_tty:
+					print(f"< ERROR: Unknown command '{parsed['cmd']}'")
+				continue
+			
+			# Execute handler
+			message = handler(state, parsed)
+			if message:
+				# Broadcast to WebSocket clients
+				await server.broadcast(json.dumps(message))
+				
+				# Echo response in REPL mode
+				if is_tty:
+					print(f"< OK {parsed['cmd']} id={message.get('id', 'N/A')}")
+			else:
+				if is_tty:
+					print(f"< ERROR: Command failed")
 	except KeyboardInterrupt:
 		if is_tty:
 			print("\nExit")
 		sys.exit(0)
+
 
 def main():
 	args = parse_args()
@@ -65,6 +88,9 @@ def main():
 	
 	# Detect if stdin is a TTY (interactive) or piped
 	is_tty = sys.stdin.isatty()
+	
+	# Initialize state
+	state = State()
 
 	print(f"Starting Mapcat server on port {port}...")
 	
@@ -87,9 +113,15 @@ def main():
 	async def runner():
 		ws_server = await server.start_ws_server(port)
 		async with ws_server:
-			await stdin_broadcast_loop(is_tty)
+			await stdin_broadcast_loop(is_tty, state)
 
 	asyncio.run(runner())
+
+
+def _log_error(message: str):
+	"""Log error to stderr."""
+	print(f"Main error: {message}", file=sys.stderr)
+
 
 if __name__ == "__main__":
 	main()
