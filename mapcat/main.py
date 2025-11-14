@@ -114,6 +114,14 @@ def main():
 		ws_server = await server.start_ws_server(port)
 		async with ws_server:
 			await stdin_broadcast_loop(is_tty, state)
+			
+			# Keep server running after stdin closes (for piped mode)
+			if not is_tty:
+				print("Commands processed. Server running. Press Ctrl+C to exit.")
+				try:
+					await asyncio.Future()  # Run forever
+				except asyncio.CancelledError:
+					pass
 
 	asyncio.run(runner())
 
