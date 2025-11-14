@@ -90,14 +90,34 @@
             var width = params.width ? parseInt(params.width) : 3;
             var opacity = params.opacity ? parseFloat(params.opacity) : 0.7;
             
-            layer = L.polyline(msg.coords, {
+            // Create a layer group to hold both the line and point markers
+            var layerGroup = L.layerGroup();
+            
+            // Add the polyline
+            var line = L.polyline(msg.coords, {
                 color: color,
                 weight: width,
                 opacity: opacity
-            }).addTo(map);
+            });
+            layerGroup.addLayer(line);
+            
+            // Add circle markers at each point
+            msg.coords.forEach(function(coord) {
+                var marker = L.circleMarker(coord, {
+                    radius: 4,
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.8,
+                    weight: 2
+                });
+                layerGroup.addLayer(marker);
+            });
+            
+            layer = layerGroup;
+            layer.addTo(map);
             
             if (label) {
-                layer.bindTooltip(label);
+                line.bindTooltip(label);
             }
         } else if (msg.type === 'polygon') {
             var opacity = params.opacity ? parseFloat(params.opacity) : 0.3;
