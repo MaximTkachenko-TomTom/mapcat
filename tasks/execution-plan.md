@@ -41,13 +41,13 @@ websockets>=11.0
 - Open browser to `http://localhost:8080`
 - Read stdin line-by-line in async loop
 
-### 1.4 Static HTML (static/index.html)
+### 1.4 Static HTML (static/index.html) ✅ DONE
 - Minimal Leaflet map (based on tmp/interactive-map.html)
 - WebSocket client connection
 - Message handler to render features
 - Keep it simple: no UI controls initially, just map rendering
 
-### 1.5 Basic Server (server.py)
+### 1.5 Basic Server (server.py) ✅ DONE
 - HTTP server to serve index.html
 - WebSocket endpoint for bidirectional communication
 - Track connected clients
