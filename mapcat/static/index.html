@@ -189,8 +189,38 @@
         
         // Auto-fit bounds to show all features (if autofocus enabled)
         if (autofocus && Object.keys(features).length > 0) {
-            var group = L.featureGroup(Object.values(features));
-            map.fitBounds(group.getBounds(), { padding: [20, 20] });
+            var bounds = null;
+            Object.values(features).forEach(function(feature) {
+                var featureBounds = null;
+                if (feature.getBounds) {
+                    featureBounds = feature.getBounds();
+                } else if (feature.getLatLng) {
+                    // Single marker
+                    var latlng = feature.getLatLng();
+                    featureBounds = L.latLngBounds([latlng, latlng]);
+                } else if (feature instanceof L.LayerGroup) {
+                    // For LayerGroups (like polylines with markers), calculate bounds from all layers
+                    var groupBounds = null;
+                    feature.eachLayer(function(subLayer) {
+                        if (subLayer.getBounds) {
+                            var subBounds = subLayer.getBounds();
+                            groupBounds = groupBounds ? groupBounds.extend(subBounds) : subBounds;
+                        } else if (subLayer.getLatLng) {
+                            var latlng = subLayer.getLatLng();
+                            groupBounds = groupBounds ? groupBounds.extend(latlng) : L.latLngBounds([latlng, latlng]);
+                        }
+                    });
+                    featureBounds = groupBounds;
+                }
+                
+                if (featureBounds) {
+                    bounds = bounds ? bounds.extend(featureBounds) : featureBounds;
+                }
+            });
+            
+            if (bounds) {
+                map.fitBounds(bounds, { padding: [20, 20] });
+            }
         }
     }
 
