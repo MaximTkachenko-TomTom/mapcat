@@ -73,5 +73,8 @@ If large refactor or dependency addition seems useful—prompt user first.
         - GOOD: "Project has a README file."
         - BAD: "Add README file."
 
+## Execution
+- Use VENV to execute mapcat.
+
 ---
 These instructions guide Copilot / assistants working in this repo. Modify only with user approval.

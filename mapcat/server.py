@@ -48,8 +48,7 @@ def start_http_server(port):
 
 async def start_ws_server(port):
 	ws_port = port + 1
-	async with websockets.serve(ws_handler, '0.0.0.0', ws_port, process_request=None, ping_interval=None):
-		await asyncio.Future()  # run forever
+	return await websockets.serve(ws_handler, '0.0.0.0', ws_port, process_request=None, ping_interval=None)
 
 def start_server(port):
 	start_http_server(port)
