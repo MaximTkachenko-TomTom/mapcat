@@ -11,6 +11,12 @@ from mapcat import server, parser
 from mapcat.state import State
 from mapcat.commands import COMMAND_HANDLERS
 
+# Import readline for better REPL experience (arrow keys, history)
+try:
+	import readline
+except ImportError:
+	readline = None
+
 def parse_args():
 	parser_arg = argparse.ArgumentParser(description="Mapcat CLI")
 	parser_arg.add_argument("--port", type=int, default=8080, help="Port for HTTP/WebSocket server (default: 8080)")
@@ -28,19 +34,19 @@ async def stdin_broadcast_loop(is_tty, state):
 	
 	try:
 		while True:
-			# Show prompt in REPL mode
-			if is_tty:
-				await loop.run_in_executor(None, lambda: sys.stdout.write("> "))
-				await loop.run_in_executor(None, sys.stdout.flush)
-			
 			# Read line
-			line = await loop.run_in_executor(None, sys.stdin.readline)
-			
-			# EOF or closed pipe
-			if not line:
-				if is_tty:
+			if is_tty:
+				# Use input() for interactive mode (supports readline)
+				try:
+					line = await loop.run_in_executor(None, input, "> ")
+				except EOFError:
 					print("\nExit")
-				break
+					break
+			else:
+				# Use stdin.readline() for piped mode
+				line = await loop.run_in_executor(None, sys.stdin.readline)
+				if not line:
+					break
 			
 			line = line.strip()
 			
