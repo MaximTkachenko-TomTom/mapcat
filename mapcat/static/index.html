@@ -176,13 +176,15 @@
         var color = params.color || '#007cff';
         var label = params.label;
         var tag = params.tag;
+        var opacity = params.opacity !== undefined ? parseFloat(params.opacity) : 1.0;
 
         if (msg.type === 'point') {
             layer = L.circleMarker(msg.coords, {
                 radius: 8,
                 color: color,
                 fillColor: color,
-                fillOpacity: 0.7,
+                fillOpacity: opacity,
+                opacity: opacity,
                 weight: 2
             }).addTo(map);
             
@@ -228,7 +230,8 @@
                         radius: markerRadius,
                         color: color,
                         fillColor: color,
-                        fillOpacity: 1.0,
+                        fillOpacity: opacity,
+                        opacity: opacity,
                         weight: 2
                     });
                     layerGroup.addLayer(marker);
@@ -256,6 +259,7 @@
                 color: color,
                 fillColor: color,
                 fillOpacity: opacity,
+                opacity: opacity,
                 weight: 2
             }).addTo(map);
             
