@@ -21,6 +21,12 @@ class StaticHandler(SimpleHTTPRequestHandler):
 
 
 clients = set()
+state_getter = None  # Will be set by main.py to get current state
+
+def set_state_getter(getter):
+	"""Set the function to get current state."""
+	global state_getter
+	state_getter = getter
 
 async def broadcast(message):
 	"""Broadcast message to all connected WebSocket clients."""
@@ -31,6 +37,21 @@ async def broadcast(message):
 async def ws_handler(websocket):
 	"""Handle WebSocket connections."""
 	clients.add(websocket)
+	
+	# Send current state to new client
+	if state_getter:
+		import json
+		state = state_getter()
+		for feature_id, feature_data in state.features.items():
+			message = {
+				'action': 'add',
+				'id': feature_id,
+				'type': feature_data['type'],
+				'coords': feature_data['coords'][0] if feature_data['type'] == 'point' else feature_data['coords'],
+				'params': feature_data['params']
+			}
+			await websocket.send(json.dumps(message))
+	
 	try:
 		async for message in websocket:
 			# Client sent a message (currently not used, but kept for future)

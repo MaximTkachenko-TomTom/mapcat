@@ -91,6 +91,9 @@ def main():
 	
 	# Initialize state
 	state = State()
+	
+	# Register state getter for new WebSocket connections
+	server.set_state_getter(lambda: state)
 
 	print(f"Starting Mapcat server on port {port}...")
 	
@@ -102,17 +105,17 @@ def main():
 	# Start HTTP server in background
 	server.start_http_server(port)
 
-	if not no_open:
-		url = f"http://localhost:{port}/"
-		print(f"Opening browser at {url}")
-		webbrowser.open(url)
-
-
-
 	# Start WebSocket server and stdin loop
 	async def runner():
 		ws_server = await server.start_ws_server(port)
 		async with ws_server:
+			# In piped mode, delay browser opening to ensure server is ready
+			if not is_tty and not no_open:
+				await asyncio.sleep(0.5)
+				url = f"http://localhost:{port}/"
+				print(f"Opening browser at {url}")
+				webbrowser.open(url)
+			
 			await stdin_broadcast_loop(is_tty, state)
 			
 			# Keep server running after stdin closes (for piped mode)
@@ -122,6 +125,12 @@ def main():
 					await asyncio.Future()  # Run forever
 				except asyncio.CancelledError:
 					pass
+
+	# Open browser immediately in interactive mode
+	if is_tty and not no_open:
+		url = f"http://localhost:{port}/"
+		print(f"Opening browser at {url}")
+		webbrowser.open(url)
 
 	asyncio.run(runner())
 
