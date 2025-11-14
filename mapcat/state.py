@@ -76,6 +76,24 @@ class State:
             return True
         return False
     
+    def remove_features_by_tag(self, tag: str) -> List[str]:
+        """
+        Remove all features with the specified tag.
+        
+        Args:
+            tag: The tag to match
+        
+        Returns:
+            List of IDs that were removed
+        """
+        removed_ids = []
+        for feature_id, feature_data in list(self.features.items()):
+            if feature_data['params'].get('tag') == tag:
+                del self.features[feature_id]
+                self.used_ids.discard(feature_id)
+                removed_ids.append(feature_id)
+        return removed_ids
+    
     def clear_all(self) -> List[str]:
         """
         Remove all features from the state.

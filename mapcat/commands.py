@@ -114,19 +114,38 @@ def handle_remove(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str
         Broadcast message dict or None on error
     """
     feature_id = parsed_cmd['params'].get('id')
+    tag = parsed_cmd['params'].get('tag')
     
-    if not feature_id:
-        _log_error("remove command requires id parameter")
+    if not feature_id and not tag:
+        _log_error("remove command requires either id or tag parameter")
         return None
     
-    if state.remove_feature(feature_id):
-        return {
-            'action': 'remove',
-            'id': feature_id
-        }
+    if feature_id and tag:
+        _log_error("remove command accepts either id or tag, not both")
+        return None
+    
+    if feature_id:
+        # Remove by ID
+        if state.remove_feature(feature_id):
+            return {
+                'action': 'remove',
+                'id': feature_id
+            }
+        else:
+            _log_error(f"Feature with id '{feature_id}' not found")
+            return None
     else:
-        _log_error(f"Feature with id '{feature_id}' not found")
-        return None
+        # Remove by tag
+        removed_ids = state.remove_features_by_tag(tag)
+        if removed_ids:
+            return {
+                'action': 'remove-by-tag',
+                'tag': tag,
+                'ids': removed_ids
+            }
+        else:
+            _log_error(f"No features found with tag '{tag}'")
+            return None
 
 
 def handle_clear(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str, Any]]:

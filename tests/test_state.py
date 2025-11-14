@@ -112,3 +112,27 @@ def test_generated_ids_are_unique():
     # All IDs should be unique
     assert len(ids) == 100
     assert len(state.features) == 100
+
+
+def test_remove_features_by_tag():
+    state = State()
+    id1 = state.add_feature('point', [[52.5, 13.4]], {'tag': 'traffic'})
+    id2 = state.add_feature('point', [[52.6, 13.5]], {'tag': 'traffic'})
+    id3 = state.add_feature('point', [[52.7, 13.6]], {'tag': 'shop'})
+    
+    removed = state.remove_features_by_tag('traffic')
+    
+    assert len(removed) == 2
+    assert id1 in removed
+    assert id2 in removed
+    assert id3 not in removed
+    assert len(state.features) == 1
+    assert state.get_feature(id3) is not None
+
+
+def test_remove_features_by_tag_not_found():
+    state = State()
+    state.add_feature('point', [[52.5, 13.4]], {'tag': 'traffic'})
+    
+    removed = state.remove_features_by_tag('nonexistent')
+    assert removed == []

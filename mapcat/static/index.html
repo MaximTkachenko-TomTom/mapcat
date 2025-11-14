@@ -145,6 +145,8 @@
             addFeature(msg);
         } else if (msg.action === 'remove') {
             removeFeature(msg.id);
+        } else if (msg.action === 'remove-by-tag') {
+            removeFeaturesByTag(msg.ids);
         } else if (msg.action === 'clear') {
             clearAllFeatures();
         } else if (msg.action === 'update-current-position') {
@@ -272,6 +274,17 @@
         } else {
             console.warn('Feature not found', id);
         }
+    }
+    
+    function removeFeaturesByTag(ids) {
+        ids.forEach(function(id) {
+            var layer = features[id];
+            if (layer) {
+                map.removeLayer(layer);
+                delete features[id];
+            }
+        });
+        console.log('Removed', ids.length, 'features by tag');
     }
 
     function clearAllFeatures() {
