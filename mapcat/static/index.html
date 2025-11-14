@@ -88,7 +88,7 @@
             }
         } else if (msg.type === 'polyline') {
             var width = params.width ? parseInt(params.width) : 3;
-            var opacity = params.opacity ? parseFloat(params.opacity) : 0.7;
+            var opacity = params.opacity ? parseFloat(params.opacity) : 1.0;
             
             // Create a layer group to hold both the line and point markers
             var layerGroup = L.layerGroup();
@@ -102,7 +102,7 @@
             layerGroup.addLayer(line);
             
             // Add circle markers at each point
-            var markerRadius = width * 1.5;
+            var markerRadius = width * 1.1;
             msg.coords.forEach(function(coord) {
                 var marker = L.circleMarker(coord, {
                     radius: markerRadius,
