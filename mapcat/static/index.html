@@ -36,12 +36,20 @@
         #controls button.active {
             background: #28a745;
         }
+        #controls button.clear {
+            background: #dc3545;
+            margin-top: 10px;
+        }
+        #controls button.clear:hover {
+            background: #c82333;
+        }
     </style>
 </head>
 <body>
     <div id="controls">
         <button id="autofocusBtn" class="active">Auto-focus: ON</button>
         <button id="followPositionBtn">Follow Position: OFF</button>
+        <button id="clearBtn" class="clear">Clear</button>
     </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -86,6 +94,17 @@
         } else {
             followPositionBtn.textContent = 'Follow Position: OFF';
             followPositionBtn.className = '';
+        }
+    });
+    
+    var clearBtn = document.getElementById('clearBtn');
+    clearBtn.addEventListener('click', function() {
+        clearAllFeatures();
+        // Also remove current position marker
+        if (currentPositionMarker) {
+            map.removeLayer(currentPositionMarker);
+            currentPositionMarker = null;
+            previousPosition = null;
         }
     });
 
