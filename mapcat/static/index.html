@@ -102,9 +102,10 @@
             layerGroup.addLayer(line);
             
             // Add circle markers at each point
+            var markerRadius = width * 1.5;
             msg.coords.forEach(function(coord) {
                 var marker = L.circleMarker(coord, {
-                    radius: 5,
+                    radius: markerRadius,
                     color: '#ffffff',  // White border for contrast
                     fillColor: color,
                     fillOpacity: 1.0,
