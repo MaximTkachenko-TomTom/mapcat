@@ -41,6 +41,7 @@
 <body>
     <div id="controls">
         <button id="autofocusBtn" class="active">Auto-focus: ON</button>
+        <button id="followPositionBtn">Follow Position: OFF</button>
     </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -55,6 +56,11 @@
     // Store features by ID
     var features = {};
     
+    // Current position state
+    var currentPositionMarker = null;
+    var previousPosition = null;
+    var followPosition = false;
+    
     // Auto-focus state
     var autofocus = true;
 
@@ -68,6 +74,18 @@
         } else {
             autofocusBtn.textContent = 'Auto-focus: OFF';
             autofocusBtn.className = '';
+        }
+    });
+    
+    var followPositionBtn = document.getElementById('followPositionBtn');
+    followPositionBtn.addEventListener('click', function() {
+        followPosition = !followPosition;
+        if (followPosition) {
+            followPositionBtn.textContent = 'Follow Position: ON';
+            followPositionBtn.className = 'active';
+        } else {
+            followPositionBtn.textContent = 'Follow Position: OFF';
+            followPositionBtn.className = '';
         }
     });
 
@@ -110,6 +128,8 @@
             removeFeature(msg.id);
         } else if (msg.action === 'clear') {
             clearAllFeatures();
+        } else if (msg.action === 'update-current-position') {
+            updateCurrentPosition(msg.coords);
         } else {
             console.warn('Unknown action', msg.action);
         }
@@ -241,6 +261,44 @@
         });
         features = {};
         console.log('Cleared all features');
+    }
+    
+    function updateCurrentPosition(coords) {
+        // Remove old marker if exists
+        if (currentPositionMarker) {
+            map.removeLayer(currentPositionMarker);
+        }
+        
+        // Calculate heading (bearing) from previous position
+        var rotation = 0;
+        if (previousPosition) {
+            var lat1 = previousPosition[0] * Math.PI / 180;
+            var lat2 = coords[0] * Math.PI / 180;
+            var dLon = (coords[1] - previousPosition[1]) * Math.PI / 180;
+            
+            var y = Math.sin(dLon) * Math.cos(lat2);
+            var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            rotation = Math.atan2(y, x) * 180 / Math.PI;
+        }
+        
+        // Create chevron icon (pointing upward, will be rotated)
+        var chevronIcon = L.divIcon({
+            className: 'current-position-icon',
+            html: '<div style="transform: rotate(' + rotation + 'deg); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 20px solid #4285F4; margin-left: -10px; margin-top: -10px;"></div>',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        
+        // Add new marker
+        currentPositionMarker = L.marker(coords, { icon: chevronIcon }).addTo(map);
+        
+        // Follow position if enabled
+        if (followPosition) {
+            map.setView(coords, map.getZoom());
+        }
+        
+        // Store for next heading calculation
+        previousPosition = coords;
     }
     </script>
 </body>

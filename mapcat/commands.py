@@ -147,6 +147,29 @@ def handle_clear(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str,
     }
 
 
+def handle_update_current_position(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Handle update-current-position command.
+    
+    Args:
+        state: The State instance
+        parsed_cmd: Parsed command dict
+    
+    Returns:
+        Broadcast message dict or None on error
+    """
+    # Validate: exactly 1 coordinate required
+    if len(parsed_cmd['coords']) != 1:
+        _log_error(f"update-current-position requires exactly 1 coordinate, got {len(parsed_cmd['coords'])}")
+        return None
+    
+    return {
+        'action': 'update-current-position',
+        'coords': parsed_cmd['coords'][0],  # [lat, lng]
+        'params': parsed_cmd['params']
+    }
+
+
 # Command registry
 COMMAND_HANDLERS = {
     'add-point': handle_add_point,
@@ -154,6 +177,7 @@ COMMAND_HANDLERS = {
     'add-polygon': handle_add_polygon,
     'remove': handle_remove,
     'clear': handle_clear,
+    'update-current-position': handle_update_current_position,
 }
 
 
