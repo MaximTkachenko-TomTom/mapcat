@@ -107,6 +107,20 @@
             previousPosition = null;
         }
     });
+    
+    // Disable auto-focus and follow position when user drags the map
+    map.on('dragstart', function() {
+        if (autofocus) {
+            autofocus = false;
+            autofocusBtn.textContent = 'Auto-focus: OFF';
+            autofocusBtn.className = '';
+        }
+        if (followPosition) {
+            followPosition = false;
+            followPositionBtn.textContent = 'Follow Position: OFF';
+            followPositionBtn.className = '';
+        }
+    });
 
     // WebSocket connection
     var ws_port = (location.port ? (parseInt(location.port) + 1) : 8081);
