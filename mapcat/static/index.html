@@ -161,6 +161,7 @@
         var params = msg.params || {};
         var color = params.color || '#007cff';
         var label = params.label;
+        var tag = params.tag;
 
         if (msg.type === 'point') {
             layer = L.circleMarker(msg.coords, {
@@ -171,8 +172,16 @@
                 weight: 2
             }).addTo(map);
             
+            // Build tooltip text
+            var tooltipText = '';
             if (label) {
-                layer.bindTooltip(label, { permanent: false, direction: 'top' });
+                tooltipText = label;
+            }
+            if (tag) {
+                tooltipText += (tooltipText ? ' [' : '[') + tag + ']';
+            }
+            if (tooltipText) {
+                layer.bindTooltip(tooltipText, { permanent: false, direction: 'top' });
             }
         } else if (msg.type === 'polyline') {
             var width = params.width ? parseInt(params.width) : 3;
@@ -205,8 +214,16 @@
             layer = layerGroup;
             layer.addTo(map);
             
+            // Build tooltip text
+            var tooltipText = '';
             if (label) {
-                line.bindTooltip(label);
+                tooltipText = label;
+            }
+            if (tag) {
+                tooltipText += (tooltipText ? ' [' : '[') + tag + ']';
+            }
+            if (tooltipText) {
+                line.bindTooltip(tooltipText);
             }
         } else if (msg.type === 'polygon') {
             var opacity = params.opacity ? parseFloat(params.opacity) : 0.3;
@@ -218,8 +235,16 @@
                 weight: 2
             }).addTo(map);
             
+            // Build tooltip text
+            var tooltipText = '';
             if (label) {
-                layer.bindTooltip(label);
+                tooltipText = label;
+            }
+            if (tag) {
+                tooltipText += (tooltipText ? ' [' : '[') + tag + ']';
+            }
+            if (tooltipText) {
+                layer.bindTooltip(tooltipText);
             }
         } else {
             console.warn('Unknown feature type', msg.type);
