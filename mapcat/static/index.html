@@ -8,9 +8,40 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <style>
         #map { width: 100vw; height: 100vh; margin: 0; }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        #controls button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px 12px;
+            background: #007cff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #controls button:hover {
+            background: #0056b3;
+        }
+        #controls button.active {
+            background: #28a745;
+        }
     </style>
 </head>
 <body>
+    <div id="controls">
+        <button id="autofocusBtn" class="active">Auto-focus: ON</button>
+    </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
@@ -23,6 +54,22 @@
 
     // Store features by ID
     var features = {};
+    
+    // Auto-focus state
+    var autofocus = true;
+
+    // Control panel
+    var autofocusBtn = document.getElementById('autofocusBtn');
+    autofocusBtn.addEventListener('click', function() {
+        autofocus = !autofocus;
+        if (autofocus) {
+            autofocusBtn.textContent = 'Auto-focus: ON';
+            autofocusBtn.className = 'active';
+        } else {
+            autofocusBtn.textContent = 'Auto-focus: OFF';
+            autofocusBtn.className = '';
+        }
+    });
 
     // WebSocket connection
     var ws_port = (location.port ? (parseInt(location.port) + 1) : 8081);
@@ -140,8 +187,8 @@
 
         features[msg.id] = layer;
         
-        // Auto-fit bounds to show all features
-        if (Object.keys(features).length > 0) {
+        // Auto-fit bounds to show all features (if autofocus enabled)
+        if (autofocus && Object.keys(features).length > 0) {
             var group = L.featureGroup(Object.values(features));
             map.fitBounds(group.getBounds(), { padding: [20, 20] });
         }
