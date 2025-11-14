@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,71 +14,136 @@
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-    // Minimal Leaflet map
+    // Initialize map
     var map = L.map('map').setView([52.527913, 13.416302], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // WebSocket client
-    // Connect to WebSocket on port+1
+    // Store features by ID
+    var features = {};
+
+    // WebSocket connection
     var ws_port = (location.port ? (parseInt(location.port) + 1) : 8081);
-    var ws_url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + ':' + ws_port + '/ws';
+    var ws_url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + ':' + ws_port;
     var ws = new WebSocket(ws_url);
 
     ws.onopen = function() {
         console.log('WebSocket connected');
     };
+    
     ws.onclose = function() {
         console.log('WebSocket disconnected');
     };
+    
     ws.onerror = function(e) {
         console.error('WebSocket error', e);
     };
 
-    // Feature rendering
-    function renderFeature(msg) {
-        // Example: {cmd: "add-point", coords: [[lat, lng]], params: {color: "red"}}
-        if (!msg || !msg.cmd) return;
-        if (msg.cmd === 'add-point' && Array.isArray(msg.coords)) {
-            msg.coords.forEach(function(coord) {
-                L.circleMarker(coord, {
-                    radius: 8,
-                    color: msg.params?.color || '#007cff',
-                    fillColor: msg.params?.color || '#007cff',
-                    fillOpacity: 0.7,
-                    weight: 2
-                }).addTo(map);
-            });
-        } else if (msg.cmd === 'add-polyline' && Array.isArray(msg.coords)) {
-            L.polyline(msg.coords, {
-                color: msg.params?.color || '#ff0000',
-                weight: 5,
-                opacity: 0.7
-            }).addTo(map);
-        } else if (msg.cmd === 'add-polygon' && Array.isArray(msg.coords)) {
-            L.polygon(msg.coords, {
-                color: msg.params?.color || '#28a745',
-                fillOpacity: 0.3
-            }).addTo(map);
-        } else if (msg.cmd === 'clear') {
-            map.eachLayer(function(layer) {
-                if (layer instanceof L.CircleMarker || layer instanceof L.Polyline || layer instanceof L.Polygon) {
-                    map.removeLayer(layer);
-                }
-            });
-        }
-    }
-
     ws.onmessage = function(event) {
         try {
             var msg = JSON.parse(event.data);
-            renderFeature(msg);
+            console.log('Received:', msg);
+            handleMessage(msg);
         } catch (e) {
-            console.warn('Invalid message', event.data);
+            console.error('Invalid message', event.data, e);
         }
     };
+
+    function handleMessage(msg) {
+        if (!msg || !msg.action) {
+            console.warn('Message missing action', msg);
+            return;
+        }
+
+        if (msg.action === 'add') {
+            addFeature(msg);
+        } else if (msg.action === 'remove') {
+            removeFeature(msg.id);
+        } else if (msg.action === 'clear') {
+            clearAllFeatures();
+        } else {
+            console.warn('Unknown action', msg.action);
+        }
+    }
+
+    function addFeature(msg) {
+        var layer;
+        var params = msg.params || {};
+        var color = params.color || '#007cff';
+        var label = params.label;
+
+        if (msg.type === 'point') {
+            layer = L.circleMarker(msg.coords, {
+                radius: 8,
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.7,
+                weight: 2
+            }).addTo(map);
+            
+            if (label) {
+                layer.bindTooltip(label, { permanent: false, direction: 'top' });
+            }
+        } else if (msg.type === 'polyline') {
+            var width = params.width ? parseInt(params.width) : 3;
+            var opacity = params.opacity ? parseFloat(params.opacity) : 0.7;
+            
+            layer = L.polyline(msg.coords, {
+                color: color,
+                weight: width,
+                opacity: opacity
+            }).addTo(map);
+            
+            if (label) {
+                layer.bindTooltip(label);
+            }
+        } else if (msg.type === 'polygon') {
+            var opacity = params.opacity ? parseFloat(params.opacity) : 0.3;
+            
+            layer = L.polygon(msg.coords, {
+                color: color,
+                fillColor: color,
+                fillOpacity: opacity,
+                weight: 2
+            }).addTo(map);
+            
+            if (label) {
+                layer.bindTooltip(label);
+            }
+        } else {
+            console.warn('Unknown feature type', msg.type);
+            return;
+        }
+
+        features[msg.id] = layer;
+        
+        // Auto-fit bounds to show all features
+        if (Object.keys(features).length > 0) {
+            var group = L.featureGroup(Object.values(features));
+            map.fitBounds(group.getBounds(), { padding: [20, 20] });
+        }
+    }
+
+    function removeFeature(id) {
+        var layer = features[id];
+        if (layer) {
+            map.removeLayer(layer);
+            delete features[id];
+            console.log('Removed feature', id);
+        } else {
+            console.warn('Feature not found', id);
+        }
+    }
+
+    function clearAllFeatures() {
+        Object.keys(features).forEach(function(id) {
+            map.removeLayer(features[id]);
+        });
+        features = {};
+        console.log('Cleared all features');
+    }
     </script>
 </body>
 </html>
