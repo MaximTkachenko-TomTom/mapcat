@@ -61,7 +61,7 @@ websockets>=11.0
 
 ### 2.1 Parser (parser.py)
 Implement `parse_command(line: str) -> dict | None`:
-- Extract command name (add-point, add-line, add-polygon, clear)
+- Extract command name (add-point, add-polyline, add-polygon, clear)
 - Parse coordinates: `(lat,lng);(lat,lng)...`
 - Parse key=value parameters (handle quoted strings)
 - Return structured dict or None if invalid
@@ -81,26 +81,29 @@ parse_command('add-point (52.5,13.4) color=red label="Home"')
 ### 2.2 State Management (state.py)
 Class `State`:
 - Store features: `{id: {type, coords, params}}`
-- Auto-increment ID counter
+- Random ID generator (8-char hex if not provided by user)
+- Track used IDs to prevent duplicates
 - Methods:
-  - `add_feature(type, coords, params) -> id`
+  - `add_feature(type, coords, params, id=None) -> id`  # generate if None
   - `get_feature(id) -> dict | None`
+  - `remove_feature(id) -> bool`  # returns True if removed
   - `clear_all() -> list[id]`  # returns removed IDs
-  - Future: `update_feature(id, ...)`, `remove_feature(id)`
 
 ### 2.3 Command Handlers (commands.py)
 Registry pattern:
 ```python
 COMMAND_HANDLERS = {
     'add-point': handle_add_point,
-    'add-line': handle_add_line,
+    'add-polyline': handle_add_polyline,
     'add-polygon': handle_add_polygon,
+    'remove': handle_remove,
     'clear': handle_clear,
 }
 
 def handle_add_point(state, parsed_cmd):
     """Add point to state, return broadcast message."""
-    feature_id = state.add_feature('point', parsed_cmd['coords'], parsed_cmd['params'])
+    user_id = parsed_cmd['params'].get('id')
+    feature_id = state.add_feature('point', parsed_cmd['coords'], parsed_cmd['params'], id=user_id)
     return {
         'action': 'add',
         'id': feature_id,
@@ -163,6 +166,12 @@ ws.onmessage = (event) => {
             }
         }
         // Similar for line, polygon
+    } else if (msg.action === 'remove') {
+        const feature = features[msg.id];
+        if (feature) {
+            feature.remove();
+            delete features[msg.id];
+        }
     } else if (msg.action === 'clear') {
         Object.values(features).forEach(f => f.remove());
         features = {};
@@ -188,9 +197,10 @@ echo "add-point (52.5,13.4) color=red" | python -m mapcat.main
 ### 3.2 Integration Testing
 Create `test_commands.txt`:
 ```
-add-point (52.5,13.4) color=red label="Start"
-add-line (52.5,13.4);(52.6,13.5) color=blue width=3
+add-point (52.5,13.4) id=start color=red label="Start"
+add-polyline (52.5,13.4);(52.6,13.5) id=route color=blue width=3
 add-polygon (52.1,13.1);(52.2,13.2);(52.15,13.15) color=green opacity=0.5
+remove id=start
 clear
 add-point (52.52,13.41) color=yellow
 ```
@@ -230,8 +240,7 @@ Log.i("Mapcat", "add-point (52.527913,13.416302) color=red label=\"Current Locat
 
 ### 4.3 Future Commands
 Extend COMMAND_HANDLERS:
-- `update-point id=123 (52.5,13.4) color=blue`
-- `remove id=123`
+- `update id=123 (52.5,13.4) color=blue` (modify existing feature)
 - `set-view (52.5,13.4) zoom=15`
 - `add-geojson {...}` (inline GeoJSON)
 

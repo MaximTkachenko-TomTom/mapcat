@@ -28,8 +28,12 @@ adb logcat -v raw -s Mapcat | mapcat
 **Command syntax:**
 ```
 add-point (52.424234,4.313123) color=red label="Home"
-add-line (52.517867,13.377402);(52.517851,13.377303) color=blue width=3
+add-point (52.424234,4.313123) id=my-point color=red label="Home"
+add-polyline (52.517867,13.377402);(52.517851,13.377303) color=blue width=3
+add-polyline (52.517867,13.377402);(52.517851,13.377303) id=route-1 color=blue
 add-polygon (52.1,13.1);(52.2,13.2);(52.3,13.1) color=green opacity=0.5
+remove id=my-point
+remove id=route-1
 clear
 ```
 
@@ -38,6 +42,8 @@ clear
 - Multiple coordinates separated by semicolons: `(lat1,lng1);(lat2,lng2)`
 - Optional parameters use key=value syntax
 - String values with spaces use quotes: `label="My Label"`
+- `id` parameter is optional; if not provided, a random ID is auto-generated
+- Use `remove id=<id>` to remove specific features by their ID
 
 ## Features
 
