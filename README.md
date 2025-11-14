@@ -31,7 +31,7 @@ add-point (52.424234,4.313123) color=red label="Home"
 add-point (52.424234,4.313123) id=my-point color=red label="Home"
 add-polyline (52.517867,13.377402);(52.517851,13.377303) color=blue width=3
 add-polyline (52.517867,13.377402);(52.517851,13.377303) id=route-1 color=blue markers=0
-add-polyline (52.517867,13.377402);(52.517851,13.377303) markers=2 width=5
+add-polyline (52.517867,13.377402);(52.517851,13.377303) markers=10 width=5
 add-polygon (52.1,13.1);(52.2,13.2);(52.3,13.1) color=green opacity=0.5
 remove id=my-point
 remove tag=traffic
@@ -46,7 +46,7 @@ clear
 - `id` parameter is optional; if not provided, a random ID is auto-generated
 - `tag` parameter groups features for batch removal with `remove tag=<tag>`
 - Use `remove id=<id>` to remove specific features by their ID
-- **Polyline markers**: `markers` parameter controls point circles (0=off, default=1.1x width, or custom multiplier)
+- **Polyline markers**: `markers` parameter sets circle radius in pixels (0=off, default=1.1x width rounded)
 
 ## Features
 
