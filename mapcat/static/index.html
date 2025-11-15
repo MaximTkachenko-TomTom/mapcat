@@ -188,16 +188,9 @@
                 weight: 2
             }).addTo(map);
             
-            // Build tooltip text
-            var tooltipText = '';
+            // Build tooltip text (label only, no tag)
             if (label) {
-                tooltipText = label;
-            }
-            if (tag) {
-                tooltipText += (tooltipText ? ' [' : '[') + tag + ']';
-            }
-            if (tooltipText) {
-                layer.bindTooltip(tooltipText, { permanent: false, direction: 'top' });
+                layer.bindTooltip(label, { permanent: false, direction: 'top' });
             }
         } else if (msg.type === 'polyline') {
             var width = params.width ? parseInt(params.width) : 3;
@@ -241,16 +234,9 @@
             layer = layerGroup;
             layer.addTo(map);
             
-            // Build tooltip text
-            var tooltipText = '';
+            // Build tooltip text (label only, no tag)
             if (label) {
-                tooltipText = label;
-            }
-            if (tag) {
-                tooltipText += (tooltipText ? ' [' : '[') + tag + ']';
-            }
-            if (tooltipText) {
-                line.bindTooltip(tooltipText);
+                line.bindTooltip(label);
             }
         } else if (msg.type === 'polygon') {
             var opacity = params.opacity ? parseFloat(params.opacity) : 0.3;
@@ -263,16 +249,9 @@
                 weight: 2
             }).addTo(map);
             
-            // Build tooltip text
-            var tooltipText = '';
+            // Build tooltip text (label only, no tag)
             if (label) {
-                tooltipText = label;
-            }
-            if (tag) {
-                tooltipText += (tooltipText ? ' [' : '[') + tag + ']';
-            }
-            if (tooltipText) {
-                layer.bindTooltip(tooltipText);
+                layer.bindTooltip(label);
             }
         } else {
             console.warn('Unknown feature type', msg.type);
