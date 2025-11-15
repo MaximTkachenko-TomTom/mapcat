@@ -24,14 +24,25 @@ def handle_add_point(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[
     
     user_id = parsed_cmd['params'].get('id')
     
+    # Apply defaults for parameters
+    params = parsed_cmd['params'].copy()
+    if 'color' not in params:
+        params['color'] = '#007cff'
+    if 'opacity' not in params:
+        params['opacity'] = 1.0
+    if 'radius' not in params:
+        params['radius'] = 4
+    if 'border' not in params:
+        params['border'] = 2
+    
     try:
-        feature_id = state.add_feature('point', parsed_cmd['coords'], parsed_cmd['params'], feature_id=user_id)
+        feature_id = state.add_feature('point', parsed_cmd['coords'], params, feature_id=user_id)
         return {
             'action': 'add',
             'id': feature_id,
             'type': 'point',
             'coords': parsed_cmd['coords'][0],  # Single point [lat, lng]
-            'params': parsed_cmd['params']
+            'params': params
         }
     except ValueError as e:
         _log_error(str(e))
@@ -56,14 +67,27 @@ def handle_add_polyline(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Di
     
     user_id = parsed_cmd['params'].get('id')
     
+    # Apply defaults for parameters
+    params = parsed_cmd['params'].copy()
+    if 'color' not in params:
+        params['color'] = '#007cff'
+    if 'opacity' not in params:
+        params['opacity'] = 1.0
+    if 'width' not in params:
+        params['width'] = 2
+    if 'markers' not in params:
+        params['markers'] = int(params['width'] * 1.1)
+    if 'markerBorder' not in params:
+        params['markerBorder'] = 2
+    
     try:
-        feature_id = state.add_feature('polyline', parsed_cmd['coords'], parsed_cmd['params'], feature_id=user_id)
+        feature_id = state.add_feature('polyline', parsed_cmd['coords'], params, feature_id=user_id)
         return {
             'action': 'add',
             'id': feature_id,
             'type': 'polyline',
             'coords': parsed_cmd['coords'],  # Array of points
-            'params': parsed_cmd['params']
+            'params': params
         }
     except ValueError as e:
         _log_error(str(e))
@@ -88,14 +112,23 @@ def handle_add_polygon(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dic
     
     user_id = parsed_cmd['params'].get('id')
     
+    # Apply defaults for parameters
+    params = parsed_cmd['params'].copy()
+    if 'color' not in params:
+        params['color'] = '#007cff'
+    if 'opacity' not in params:
+        params['opacity'] = 0.3
+    if 'border' not in params:
+        params['border'] = 2
+    
     try:
-        feature_id = state.add_feature('polygon', parsed_cmd['coords'], parsed_cmd['params'], feature_id=user_id)
+        feature_id = state.add_feature('polygon', parsed_cmd['coords'], params, feature_id=user_id)
         return {
             'action': 'add',
             'id': feature_id,
             'type': 'polygon',
             'coords': parsed_cmd['coords'],  # Array of points
-            'params': parsed_cmd['params']
+            'params': params
         }
     except ValueError as e:
         _log_error(str(e))

@@ -173,14 +173,21 @@
     function addFeature(msg) {
         var layer;
         var params = msg.params || {};
-        var color = params.color || '#007cff';
+        var color = params.color;
         var label = params.label;
         var tag = params.tag;
-        var opacity = params.opacity !== undefined ? parseFloat(params.opacity) : 1.0;
+        var opacity = params.opacity;
 
         if (msg.type === 'point') {
-            var radius = params.radius !== undefined ? parseInt(params.radius) : 4;
-            var border = params.border !== undefined ? parseInt(params.border) : 2;
+            var radius = params.radius;
+            var border = params.border;
+            
+            // Validate required parameters
+            if (color === undefined || opacity === undefined || radius === undefined || border === undefined) {
+                console.error('Missing required parameters for point:', msg);
+                console.error('Required: color, opacity, radius, border');
+                return;
+            }
             
             layer = L.circleMarker(msg.coords, {
                 radius: radius,
@@ -196,16 +203,16 @@
                 layer.bindTooltip(label, { permanent: false, direction: 'top' });
             }
         } else if (msg.type === 'polyline') {
-            var width = params.width ? parseInt(params.width) : 2;
-            var opacity = params.opacity ? parseFloat(params.opacity) : 1.0;
+            var width = params.width;
+            var markerRadius = params.markers;
+            var markerBorder = params.markerBorder;
             
-            // markers parameter is an absolute size (integer), not a multiplier
-            // If not specified, default to 1.1x width
-            var markerRadius;
-            if (params.markers !== undefined) {
-                markerRadius = parseInt(params.markers);
-            } else {
-                markerRadius = Math.round(width * 1.1);
+            // Validate required parameters
+            if (color === undefined || opacity === undefined || width === undefined || 
+                markerRadius === undefined || markerBorder === undefined) {
+                console.error('Missing required parameters for polyline:', msg);
+                console.error('Required: color, opacity, width, markers, markerBorder');
+                return;
             }
             
             // Create a layer group to hold both the line and point markers
@@ -228,7 +235,7 @@
                         fillColor: color,
                         fillOpacity: opacity,
                         opacity: opacity,
-                        weight: 2
+                        weight: markerBorder
                     });
                     layerGroup.addLayer(marker);
                 });
@@ -242,14 +249,21 @@
                 line.bindTooltip(label);
             }
         } else if (msg.type === 'polygon') {
-            var opacity = params.opacity ? parseFloat(params.opacity) : 0.3;
+            var border = params.border;
+            
+            // Validate required parameters
+            if (color === undefined || opacity === undefined || border === undefined) {
+                console.error('Missing required parameters for polygon:', msg);
+                console.error('Required: color, opacity, border');
+                return;
+            }
             
             layer = L.polygon(msg.coords, {
                 color: color,
                 fillColor: color,
                 fillOpacity: opacity,
                 opacity: opacity,
-                weight: 2
+                weight: border
             }).addTo(map);
             
             // Build tooltip text (label only, no tag)
