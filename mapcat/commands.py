@@ -222,7 +222,7 @@ add-polyline (lat,lng);(lat,lng);... [parameters]
     id=<id>           - Unique identifier
     tag=<tag>         - Tag for grouping
     color=<color>     - Line color (default: #007cff)
-    width=<pixels>    - Line width in pixels (default: 3)
+    width=<pixels>    - Line width in pixels (default: 2)
     opacity=<0.0-1.0> - Transparency (default: 1.0)
     markers=<pixels>  - Circle radius at points (0=off, default: 1.1x width)
     label=<text>      - Label text
