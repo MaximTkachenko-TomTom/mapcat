@@ -3,3 +3,4 @@ tmp
 mapcat/__pycache__/
 tests/__pycache__/
 manual_test_data/
+mapcat.egg-info/
