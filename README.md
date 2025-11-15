@@ -1,6 +1,63 @@
 # mapcat
 
-A command-line tool for visualizing geographic data from Android logcat in real-time on an interactive web map.
+A command-line tool for visualizing geographic data on an interactive web map. Use it as a REPL for interactive exploration or pipe commands from stdin for automated workflows.
+
+---
+
+## Usage
+
+### REPL Mode
+
+Start `mapcat` and type commands interactively:
+
+```bash
+mapcat
+> add-point (52.5,13.4) color=red label="Home"
+> add-polyline (52.5,13.4);(52.6,13.5) color=blue width=3
+> add-polygon (52.1,13.1);(52.2,13.2);(52.15,13.15) color=green opacity=0.5
+> update-current-position (52.52,13.41)
+> remove id=my-point
+> clear
+> help
+```
+
+Type `help` to see all available commands and parameters.
+
+### Piped Mode
+
+Pipe commands from a file or another process:
+
+```bash
+# From a file
+cat commands.txt | mapcat
+
+# From echo
+echo "add-point (52.5,13.4) color=red" | mapcat
+
+# From any command
+generate-commands.sh | mapcat
+```
+
+---
+
+## ADB Connection
+
+`mapcat` works seamlessly with Android Debug Bridge (adb) to visualize location data from Android apps in real-time.
+
+**Setup:**
+1. Log commands from your Android app using the `Mapcat` tag:
+   ```java
+   Log.d("Mapcat", "add-point (52.5,13.4) color=blue label=\"Current Location\"");
+   ```
+
+2. Pipe adb logcat to mapcat:
+   ```bash
+   adb logcat -v raw -s Mapcat | mapcat
+   ```
+
+The `-s Mapcat` flag filters logcat output to show only messages with the `Mapcat` tag, making integration clean and efficient.
+
+---
 
 ## Installation
 
@@ -19,83 +76,57 @@ pip install -e .
 
 After installation, the `mapcat` command is available from any directory (with venv activated).
 
-## Quick Start
+**Requirements:**
+- Python 3.11+
+- Virtual environment recommended
 
-```bash
-# Activate virtual environment (if not already active)
-source /path/to/mapcat/.venv/bin/activate
+---
 
-# Run mapcat
-mapcat
+## Command Reference
 
-# Or pipe from adb logcat
-adb logcat -v raw -s Mapcat | mapcat
-```
+Run `help` in REPL mode to see detailed documentation for all commands.
 
-## Overview
+**Quick reference:**
 
-`mapcat` receives geographic data piped from `adb logcat` and displays points, lines, and polygons on a live web map.
+| Command | Description | Example |
+|---------|-------------|---------|
+| `add-point` | Add a point marker | `add-point (52.5,13.4) color=red label="Home"` |
+| `add-polyline` | Add a line | `add-polyline (52.5,13.4);(52.6,13.5) color=blue width=3` |
+| `add-polygon` | Add a polygon area | `add-polygon (52.1,13.1);(52.2,13.2);(52.15,13.15) color=green` |
+| `update-current-position` | Update position marker | `update-current-position (52.5,13.4)` |
+| `remove id=<id>` | Remove by ID | `remove id=my-point` |
+| `remove tag=<tag>` | Remove by tag | `remove tag=traffic` |
+| `clear` | Clear all features | `clear` |
+| `help` | Show help | `help` |
 
-```bash
-adb logcat -v raw -s Mapcat | mapcat
-```
+**Common parameters:**
+- `id=<id>` - Unique identifier (auto-generated if not provided)
+- `tag=<tag>` - Group features for batch operations
+- `color=<color>` - Named (`red`, `darkblue`), hex (`#FF5733`), default: `#007cff`
+- `label=<text>` - Display label (use quotes for spaces: `label="My Point"`)
+- `opacity=<0.0-1.0>` - Transparency level (default: `1.0`)
+- `width=<pixels>` - Line width for polylines (default: `3`)
+- `markers=<pixels>` - Circle radius at polyline points (`0`=off, default: `1.1x width`)
 
-## Tech Stack
-
-- **CLI Tool**: Python
-- **Web Server**: WebSocket for real-time communication
-- **Map Library**: Leaflet.js with OpenStreetMap tiles
-- **Frontend**: Static HTML page served locally
-
-## Command Format
-
-Commands are logged to Android logcat with the `Mapcat` tag. The tool filters by tag, so no additional prefix is needed:
-
-```bash
-adb logcat -v raw -s Mapcat | mapcat
-```
-
-**Command syntax:**
-```
-add-point (52.424234,4.313123) color=red label="Home" opacity=0.8
-add-point (52.424234,4.313123) id=my-point color=red label="Home"
-add-polyline (52.517867,13.377402);(52.517851,13.377303) color=blue width=3 opacity=0.5
-add-polyline (52.517867,13.377402);(52.517851,13.377303) id=route-1 color=blue markers=0
-add-polyline (52.517867,13.377402);(52.517851,13.377303) markers=10 width=5
-add-polygon (52.1,13.1);(52.2,13.2);(52.3,13.1) color=green opacity=0.5
-remove id=my-point
-remove tag=traffic
-clear
-```
-
-**Format:**
-- Coordinates are in parentheses: `(lat,lng)`
-- Multiple coordinates separated by semicolons: `(lat1,lng1);(lat2,lng2)`
-- Optional parameters use key=value syntax
-- String values with spaces use quotes: `label="My Label"`
-- `id` parameter is optional; if not provided, a random ID is auto-generated
-- `tag` parameter groups features for batch removal with `remove tag=<tag>`
-- Use `remove id=<id>` to remove specific features by their ID
-- **Color**: `color` parameter accepts CSS colors (named: `red`, `blue`, `darkgreen`; hex: `#FF5733`; default: `#007cff`)
-- **Opacity**: `opacity` parameter controls transparency (0.0-1.0, default=1.0) for all feature types
-- **Polyline markers**: `markers` parameter sets circle radius in pixels (0=off, default=1.1x width rounded)
+---
 
 ## Features
 
-- Real-time visualization of geographic data
-- Support for points, lines, and polygons
-- Color-coded markers and shapes
-- Auto-opens browser on start
-- No API keys required
+- ✅ Real-time visualization of geographic data
+- ✅ Interactive web map with Leaflet.js and OpenStreetMap
+- ✅ Support for points, polylines, and polygons
+- ✅ Customizable colors, opacity, and styling
+- ✅ REPL and piped modes
+- ✅ Position tracking with directional chevron
+- ✅ Tag-based feature grouping
+- ✅ Auto-focus and follow position controls
+- ✅ No API keys required
 
-## Installation
+---
 
-_Coming soon_
+## Tech Stack
 
-## Usage
-
-_Coming soon_
-
-## Development
-
-_Coming soon_
+- **CLI Tool**: Python 3.11+
+- **Web Server**: HTTP + WebSocket
+- **Map Library**: Leaflet.js with OpenStreetMap tiles
+- **Frontend**: Static HTML page served locally
