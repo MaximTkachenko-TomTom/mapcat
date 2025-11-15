@@ -266,7 +266,6 @@ Tips:
   * Light variants: lightblue, lightgreen, lightcoral, lightgray, lightyellow, etc.
   * Extended names: crimson, navy, teal, indigo, violet, magenta, lime, gold, silver
   * Hex codes: #FF0000 (red), #0000FF (blue), #00FF00 (green), #FF5733 (orange)
-  * RGB values: rgb(255,0,0) for red, rgb(0,255,0) for green
 - Auto-focus and Follow Position can be toggled via web UI buttons
 - Map can be cleared via web UI Clear button
 """

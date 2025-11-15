@@ -76,7 +76,7 @@ clear
 - `id` parameter is optional; if not provided, a random ID is auto-generated
 - `tag` parameter groups features for batch removal with `remove tag=<tag>`
 - Use `remove id=<id>` to remove specific features by their ID
-- **Color**: `color` parameter accepts CSS colors (named: `red`, `blue`, `darkgreen`; hex: `#FF5733`; rgb: `rgb(255,0,0)`; default: `#007cff`)
+- **Color**: `color` parameter accepts CSS colors (named: `red`, `blue`, `darkgreen`; hex: `#FF5733`; default: `#007cff`)
 - **Opacity**: `opacity` parameter controls transparency (0.0-1.0, default=1.0) for all feature types
 - **Polyline markers**: `markers` parameter sets circle radius in pixels (0=off, default=1.1x width rounded)
 
