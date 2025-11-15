@@ -186,6 +186,11 @@
             if (color === undefined || opacity === undefined || radius === undefined || border === undefined) {
                 console.error('Missing required parameters for point:', msg);
                 console.error('Required: color, opacity, radius, border');
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    message: 'Missing required parameters for point: color, opacity, radius, border',
+                    feature: msg
+                }));
                 return;
             }
             
@@ -212,6 +217,11 @@
                 markerRadius === undefined || markerBorder === undefined) {
                 console.error('Missing required parameters for polyline:', msg);
                 console.error('Required: color, opacity, width, markers, markerBorder');
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    message: 'Missing required parameters for polyline: color, opacity, width, markers, markerBorder',
+                    feature: msg
+                }));
                 return;
             }
             
@@ -255,6 +265,11 @@
             if (color === undefined || opacity === undefined || border === undefined) {
                 console.error('Missing required parameters for polygon:', msg);
                 console.error('Required: color, opacity, border');
+                ws.send(JSON.stringify({
+                    type: 'error',
+                    message: 'Missing required parameters for polygon: color, opacity, border',
+                    feature: msg
+                }));
                 return;
             }
             

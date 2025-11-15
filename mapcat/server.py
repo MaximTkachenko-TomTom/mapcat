@@ -54,8 +54,17 @@ async def ws_handler(websocket):
 	
 	try:
 		async for message in websocket:
-			# Client sent a message (currently not used, but kept for future)
-			pass
+			# Handle messages from client (e.g., error reports)
+			try:
+				import json
+				import sys
+				data = json.loads(message)
+				if data.get('type') == 'error':
+					# Print error to stderr
+					print(f"Browser error: {data.get('message', 'Unknown error')}", file=sys.stderr)
+			except Exception as e:
+				# Ignore malformed messages
+				pass
 	finally:
 		clients.remove(websocket)
 
