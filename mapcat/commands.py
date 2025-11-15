@@ -260,7 +260,13 @@ Tips:
 - Coordinates: (latitude,longitude) - e.g., (52.5,13.4)
 - Multiple coordinates: separate with semicolons - (52.5,13.4);(52.6,13.5)
 - String values with spaces: use quotes - label="My Label"
-- Colors: named (red, blue), hex (#FF5733), or rgb (rgb(255,0,0))
+- Colors: Multiple formats supported:
+  * Named colors: red, blue, green, yellow, orange, purple, pink, cyan, brown, black, white, gray
+  * Dark variants: darkred, darkblue, darkgreen, darkorange, darkgray, etc.
+  * Light variants: lightblue, lightgreen, lightcoral, lightgray, lightyellow, etc.
+  * Extended names: crimson, navy, teal, indigo, violet, magenta, lime, gold, silver
+  * Hex codes: #FF0000 (red), #0000FF (blue), #00FF00 (green), #FF5733 (orange)
+  * RGB values: rgb(255,0,0) for red, rgb(0,255,0) for green
 - Auto-focus and Follow Position can be toggled via web UI buttons
 - Map can be cleared via web UI Clear button
 """
