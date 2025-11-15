@@ -2,8 +2,6 @@
 
 A command-line tool for visualizing geographic data on an interactive web map. Use it as a REPL for interactive exploration or pipe commands from stdin for automated workflows.
 
----
-
 ## Usage
 
 ### REPL Mode
@@ -38,15 +36,13 @@ echo "add-point (52.5,13.4) color=red" | mapcat
 generate-commands.sh | mapcat
 ```
 
----
-
 ## ADB Connection
 
-`mapcat` works seamlessly with Android Debug Bridge (adb) to visualize location data from Android apps in real-time.
+`mapcat` works with Android Debug Bridge (adb) to visualize location data from Android apps in real-time.
 
 **Setup:**
 1. Log commands from your Android app using the `Mapcat` tag:
-   ```java
+   ```kotlin
    Log.d("Mapcat", "add-point (52.5,13.4) color=blue label=\"Current Location\"");
    ```
 
@@ -55,9 +51,7 @@ generate-commands.sh | mapcat
    adb logcat -v raw -s Mapcat | mapcat
    ```
 
-The `-s Mapcat` flag filters logcat output to show only messages with the `Mapcat` tag, making integration clean and efficient.
-
----
+The `-v raw` displays the raw log message with no other metadata fields, `-s Mapcat` flag filters logcat output to show only messages with the `Mapcat` tag, making integration clean and efficient.
 
 ## Installation
 
@@ -79,8 +73,6 @@ After installation, the `mapcat` command is available from any directory (with v
 **Requirements:**
 - Python 3.11+
 - Virtual environment recommended
-
----
 
 ## Command Reference
 
@@ -108,8 +100,6 @@ Run `help` in REPL mode to see detailed documentation for all commands.
 - `width=<pixels>` - Line width for polylines (default: `3`)
 - `markers=<pixels>` - Circle radius at polyline points (`0`=off, default: `1.1x width`)
 
----
-
 ## Features
 
 - ✅ Real-time visualization of geographic data
@@ -121,8 +111,6 @@ Run `help` in REPL mode to see detailed documentation for all commands.
 - ✅ Tag-based feature grouping
 - ✅ Auto-focus and follow position controls
 - ✅ No API keys required
-
----
 
 ## Tech Stack
 
