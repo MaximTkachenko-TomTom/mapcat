@@ -78,9 +78,9 @@ async def stdin_broadcast_loop(is_tty, state):
 				# Echo response in REPL mode
 				if is_tty:
 					print(f"< OK {parsed['cmd']} id={message.get('id', 'N/A')}")
-			else:
-				if is_tty:
-					print(f"< ERROR: Command failed")
+			elif is_tty and parsed['cmd'] != 'help':
+				# Handler returned None (failed), but not for help command
+				print(f"< ERROR: Command failed")
 	except KeyboardInterrupt:
 		if is_tty:
 			print("\nExit")

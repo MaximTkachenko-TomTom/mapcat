@@ -189,6 +189,85 @@ def handle_update_current_position(state: State, parsed_cmd: Dict[str, Any]) -> 
     }
 
 
+def handle_help(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Handle help command - shows available commands and parameters.
+    
+    Args:
+        state: The State instance
+        parsed_cmd: Parsed command dict
+    
+    Returns:
+        None (prints to stdout instead of broadcasting)
+    """
+    help_text = """
+Available Commands:
+===================
+
+add-point (lat,lng) [parameters]
+  Add a point marker to the map
+  Parameters:
+    id=<id>           - Unique identifier (auto-generated if not provided)
+    tag=<tag>         - Tag for grouping features
+    color=<color>     - CSS color (named: red, blue; hex: #FF5733; default: #007cff)
+    label=<text>      - Label text (use quotes for spaces: label="My Point")
+    opacity=<0.0-1.0> - Transparency (default: 1.0)
+  Example: add-point (52.5,13.4) color=red label="Home"
+
+add-polyline (lat,lng);(lat,lng);... [parameters]
+  Add a line connecting multiple points
+  Parameters:
+    id=<id>           - Unique identifier
+    tag=<tag>         - Tag for grouping
+    color=<color>     - Line color (default: #007cff)
+    width=<pixels>    - Line width in pixels (default: 3)
+    opacity=<0.0-1.0> - Transparency (default: 1.0)
+    markers=<pixels>  - Circle radius at points (0=off, default: 1.1x width)
+    label=<text>      - Label text
+  Example: add-polyline (52.5,13.4);(52.6,13.5) color=blue width=5
+
+add-polygon (lat,lng);(lat,lng);... [parameters]
+  Add a filled polygon area
+  Parameters:
+    id=<id>           - Unique identifier
+    tag=<tag>         - Tag for grouping
+    color=<color>     - Fill and border color (default: #007cff)
+    opacity=<0.0-1.0> - Fill transparency (default: 1.0)
+    label=<text>      - Label text
+  Example: add-polygon (52.1,13.1);(52.2,13.2);(52.15,13.15) color=green opacity=0.5
+
+update-current-position (lat,lng)
+  Update the current position marker (blue chevron)
+  Example: update-current-position (52.5,13.4)
+
+remove id=<id>
+  Remove a feature by its ID
+  Example: remove id=my-point
+
+remove tag=<tag>
+  Remove all features with a specific tag
+  Example: remove tag=traffic
+
+clear
+  Remove all features from the map
+  Example: clear
+
+help
+  Show this help message
+
+Tips:
+-----
+- Coordinates: (latitude,longitude) - e.g., (52.5,13.4)
+- Multiple coordinates: separate with semicolons - (52.5,13.4);(52.6,13.5)
+- String values with spaces: use quotes - label="My Label"
+- Colors: named (red, blue), hex (#FF5733), or rgb (rgb(255,0,0))
+- Auto-focus and Follow Position can be toggled via web UI buttons
+- Map can be cleared via web UI Clear button
+"""
+    print(help_text)
+    return None
+
+
 # Command registry
 COMMAND_HANDLERS = {
     'add-point': handle_add_point,
@@ -197,6 +276,7 @@ COMMAND_HANDLERS = {
     'remove': handle_remove,
     'clear': handle_clear,
     'update-current-position': handle_update_current_position,
+    'help': handle_help,
 }
 
 
