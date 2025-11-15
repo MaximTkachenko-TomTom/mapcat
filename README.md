@@ -97,6 +97,8 @@ Run `help` in REPL mode to see detailed documentation for all commands.
 - `color=<color>` - Named (`red`, `darkblue`), hex (`#FF5733`), default: `#007cff`
 - `label=<text>` - Display label (use quotes for spaces: `label="My Point"`)
 - `opacity=<0.0-1.0>` - Transparency level (default: `1.0`)
+- `radius=<pixels>` - Point circle radius (default: `4`)
+- `border=<pixels>` - Point border width (default: `2`)
 - `width=<pixels>` - Line width for polylines (default: `3`)
 - `markers=<pixels>` - Circle radius at polyline points (`0`=off, default: `1.1x width`)
 

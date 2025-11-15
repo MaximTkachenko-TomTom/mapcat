@@ -179,13 +179,16 @@
         var opacity = params.opacity !== undefined ? parseFloat(params.opacity) : 1.0;
 
         if (msg.type === 'point') {
+            var radius = params.radius !== undefined ? parseInt(params.radius) : 4;
+            var border = params.border !== undefined ? parseInt(params.border) : 2;
+            
             layer = L.circleMarker(msg.coords, {
-                radius: 8,
+                radius: radius,
                 color: color,
                 fillColor: color,
                 fillOpacity: opacity,
                 opacity: opacity,
-                weight: 2
+                weight: border
             }).addTo(map);
             
             // Build tooltip text (label only, no tag)

@@ -212,7 +212,9 @@ add-point (lat,lng) [parameters]
     color=<color>     - CSS color (named: red, blue; hex: #FF5733; default: #007cff)
     label=<text>      - Label text (use quotes for spaces: label="My Point")
     opacity=<0.0-1.0> - Transparency (default: 1.0)
-  Example: add-point (52.5,13.4) color=red label="Home"
+    radius=<pixels>   - Circle radius in pixels (default: 4)
+    border=<pixels>   - Border width in pixels (default: 2)
+  Example: add-point (52.5,13.4) color=red label="Home" radius=6 border=3
 
 add-polyline (lat,lng);(lat,lng);... [parameters]
   Add a line connecting multiple points
