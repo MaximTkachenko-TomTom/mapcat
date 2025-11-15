@@ -2,6 +2,36 @@
 
 A command-line tool for visualizing geographic data from Android logcat in real-time on an interactive web map.
 
+## Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd mapcat
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install in editable mode
+pip install -e .
+```
+
+After installation, the `mapcat` command is available from any directory (with venv activated).
+
+## Quick Start
+
+```bash
+# Activate virtual environment (if not already active)
+source /path/to/mapcat/.venv/bin/activate
+
+# Run mapcat
+mapcat
+
+# Or pipe from adb logcat
+adb logcat -v raw -s Mapcat | mapcat
+```
+
 ## Overview
 
 `mapcat` receives geographic data piped from `adb logcat` and displays points, lines, and polygons on a live web map.
