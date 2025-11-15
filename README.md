@@ -102,15 +102,15 @@ Run `help` in REPL mode to see detailed documentation for all commands.
 
 ## Features
 
-- ✅ Real-time visualization of geographic data
-- ✅ Interactive web map with Leaflet.js and OpenStreetMap
-- ✅ Support for points, polylines, and polygons
-- ✅ Customizable colors, opacity, and styling
-- ✅ REPL and piped modes
-- ✅ Position tracking with directional chevron
-- ✅ Tag-based feature grouping
-- ✅ Auto-focus and follow position controls
-- ✅ No API keys required
+- Real-time visualization of geographic data
+- Interactive web map with Leaflet.js and OpenStreetMap
+- Support for points, polylines, and polygons
+- Customizable colors, opacity, and styling
+- REPL and piped modes
+- Position tracking with directional chevron
+- Tag-based feature grouping
+- Auto-focus and follow position controls
+- No API keys required
 
 ## Tech Stack
 
