@@ -1,5 +1,13 @@
 # Task 06: Split Components - Execution Plan
 
+## ⛔ STATUS: WON'T DO
+
+**Reason:** Browser security policies prevent HTTPS-hosted pages (e.g., GitHub Pages) from connecting to unsecured local WebSocket servers (`ws://localhost:4444`). The mixed content policy blocks this connection. Alternative solutions (local files, extensions, or WSS certificates) defeat the main goal of hosting the page remotely.
+
+**Date:** 2025-11-15
+
+---
+
 ## Goal
 Separate mapcat into independent web page server and Python WebSocket client.
 
