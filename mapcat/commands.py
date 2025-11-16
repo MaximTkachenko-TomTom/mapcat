@@ -30,10 +30,16 @@ def handle_add_point(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[
         params['color'] = '#007cff'
     if 'opacity' not in params:
         params['opacity'] = 1.0
+    else:
+        params['opacity'] = float(params['opacity'])
     if 'radius' not in params:
         params['radius'] = 4
+    else:
+        params['radius'] = int(params['radius'])
     if 'border' not in params:
         params['border'] = 2
+    else:
+        params['border'] = int(params['border'])
     
     try:
         feature_id = state.add_feature('point', parsed_cmd['coords'], params, feature_id=user_id)
@@ -73,12 +79,20 @@ def handle_add_polyline(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Di
         params['color'] = '#007cff'
     if 'opacity' not in params:
         params['opacity'] = 1.0
+    else:
+        params['opacity'] = float(params['opacity'])
     if 'width' not in params:
         params['width'] = 2
+    else:
+        params['width'] = int(params['width'])
     if 'markers' not in params:
         params['markers'] = int(params['width'] * 1.1)
+    else:
+        params['markers'] = int(params['markers'])
     if 'markerBorder' not in params:
         params['markerBorder'] = 2
+    else:
+        params['markerBorder'] = int(params['markerBorder'])
     
     try:
         feature_id = state.add_feature('polyline', parsed_cmd['coords'], params, feature_id=user_id)
@@ -118,8 +132,12 @@ def handle_add_polygon(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dic
         params['color'] = '#007cff'
     if 'opacity' not in params:
         params['opacity'] = 0.3
+    else:
+        params['opacity'] = float(params['opacity'])
     if 'border' not in params:
         params['border'] = 2
+    else:
+        params['border'] = int(params['border'])
     
     try:
         feature_id = state.add_feature('polygon', parsed_cmd['coords'], params, feature_id=user_id)
