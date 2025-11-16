@@ -86,7 +86,7 @@ def handle_add_polyline(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Di
     else:
         params['width'] = int(params['width'])
     if 'markers' not in params:
-        params['markers'] = int(params['width'] * 1.1)
+        params['markers'] = 0
     else:
         params['markers'] = int(params['markers'])
     if 'markerBorder' not in params:
@@ -275,7 +275,7 @@ add-polyline (lat,lng);(lat,lng);... [parameters]
     color=<color>     - Line color (default: #007cff)
     width=<pixels>    - Line width in pixels (default: 2)
     opacity=<0.0-1.0> - Transparency (default: 1.0)
-    markers=<pixels>  - Circle radius at points (0=off, default: 1.1x width)
+    markers=<pixels>  - Circle radius at points (0=off, default: 0)
     label=<text>      - Label text
   Example: add-polyline (52.5,13.4);(52.6,13.5) color=blue width=5
 
