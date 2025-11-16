@@ -1,6 +1,6 @@
 # mapcat
 
-A command-line tool for visualizing geographic data on an interactive web map. Use it as a REPL for interactive exploration or pipe commands from stdin for automated workflows.
+A command-line tool for visualizing geospatial data on an interactive web map. Use it as a REPL for interactive exploration or pipe commands from stdin for automated workflows.
 
 ## Usage
 
@@ -38,7 +38,7 @@ generate-commands.sh | mapcat
 
 ## ADB Connection
 
-`mapcat` works with Android Debug Bridge (adb) to visualize location data from Android apps in real-time.
+`mapcat` works with Android Debug Bridge (adb) to visualize geospatial data from Android apps in real-time.
 
 **Setup:**
 1. Log commands from your Android app using the `Mapcat` tag:
@@ -53,11 +53,13 @@ generate-commands.sh | mapcat
 
 The `-v raw` displays the raw log message with no other metadata fields, `-s Mapcat` flag filters logcat output to show only messages with the `Mapcat` tag, making integration clean and efficient.
 
+![adbmapcat](assets/adb_mapcat_1024.gif)
+
 ## Installation
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone git@github.com:MaximTkachenko-TomTom/mapcat.git
 cd mapcat
 
 # Create virtual environment
