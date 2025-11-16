@@ -40,6 +40,8 @@ generate-commands.sh | mapcat
 
 `mapcat` works with Android Debug Bridge (adb) to visualize location data from Android apps in real-time.
 
+![adb logcat | mapcat](assets/adb_mapcat_1024.gif)
+
 **Setup:**
 1. Log commands from your Android app using the `Mapcat` tag:
    ```kotlin
