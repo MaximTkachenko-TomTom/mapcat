@@ -62,19 +62,14 @@ The `-v raw` displays the raw log message with no other metadata fields, `-s Map
 git clone git@github.com:MaximTkachenko-TomTom/mapcat.git
 cd mapcat
 
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
 # Install in editable mode
 pip install -e .
 ```
 
-After installation, the `mapcat` command is available from any directory (with venv activated).
+After installation, the `mapcat` command is available from any directory.
 
 **Requirements:**
 - Python 3.11+
-- Virtual environment recommended
 
 ## Command Reference
 
