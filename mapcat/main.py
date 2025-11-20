@@ -26,14 +26,20 @@ def parse_args():
 	parser_arg = argparse.ArgumentParser(description="Mapcat CLI")
 	parser_arg.add_argument("--port", type=int, default=8080, help="Port for HTTP/WebSocket server (default: 8080)")
 	parser_arg.add_argument("--no-open", action="store_true", help="Do not auto-open browser")
+	parser_arg.add_argument("--verbose", action="store_true", help="Print OK messages for successful commands")
 	return parser_arg.parse_args()
 
 
-async def stdin_broadcast_loop(is_tty, state):
+async def stdin_broadcast_loop(is_tty, state, verbose):
 	"""
 	Read stdin and broadcast lines.
 	If is_tty, run in REPL mode with prompts.
 	Otherwise, process piped input and exit when done.
+	
+	Args:
+		is_tty: True if running in interactive TTY mode
+		state: State instance
+		verbose: True if OK messages should be printed
 	"""
 	loop = asyncio.get_event_loop()
 	
@@ -84,8 +90,9 @@ async def stdin_broadcast_loop(is_tty, state):
 				# Broadcast to WebSocket clients
 				await server.broadcast(json.dumps(message))
 				
-				# Log success to stdout
-				_log_success(parsed['cmd'], line)
+				# Log success to stdout (if verbose)
+				if verbose:
+					_log_success(parsed['cmd'], line)
 				
 				# Echo response in REPL mode
 				if is_tty:
@@ -104,6 +111,7 @@ def main():
 	args = parse_args()
 	port = args.port
 	no_open = args.no_open
+	verbose = args.verbose
 	
 	# Detect if stdin is a TTY (interactive) or piped
 	is_tty = sys.stdin.isatty()
@@ -135,7 +143,7 @@ def main():
 				print(f"Opening browser at {url}")
 				webbrowser.open(url)
 			
-			await stdin_broadcast_loop(is_tty, state)
+			await stdin_broadcast_loop(is_tty, state, verbose)
 			
 			# Keep server running after stdin closes (for piped mode)
 			if not is_tty:
