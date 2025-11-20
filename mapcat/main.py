@@ -13,6 +13,7 @@ from mapcat.commands import COMMAND_HANDLERS
 
 # ANSI color codes
 RED = '\033[91m'
+GREEN = '\033[92m'
 RESET = '\033[0m'
 
 # Import readline for better REPL experience (arrow keys, history)
@@ -83,6 +84,9 @@ async def stdin_broadcast_loop(is_tty, state):
 				# Broadcast to WebSocket clients
 				await server.broadcast(json.dumps(message))
 				
+				# Log success to stdout
+				_log_success(parsed['cmd'], line)
+				
 				# Echo response in REPL mode
 				if is_tty:
 					print(f"< OK {parsed['cmd']} id={message.get('id', 'N/A')}")
@@ -148,6 +152,27 @@ def main():
 		webbrowser.open(url)
 
 	asyncio.run(runner())
+
+
+def _log_success(cmd: str, line: str):
+    """
+    Log success to stdout in green.
+    
+    Args:
+        cmd: The command that succeeded
+        line: Original command line
+    """
+    # Extract parameters (everything after command name)
+    parts = line.split(None, 1)  # Split on first whitespace
+    params = parts[1] if len(parts) > 1 else ""
+    
+    # Take first 20 characters of params, add "..." if truncated
+    if len(params) > 20:
+        params_preview = params[:20] + "..."
+    else:
+        params_preview = params
+    
+    print(f"{GREEN}OK: {cmd} {params_preview}{RESET}")
 
 
 def _log_error(cmd: str, message: str, line: str = ""):
