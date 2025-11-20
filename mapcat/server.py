@@ -18,6 +18,13 @@ class StaticHandler(SimpleHTTPRequestHandler):
 		if os.path.isdir(fullpath):
 			return os.path.join(fullpath, 'index.html')
 		return fullpath if os.path.exists(fullpath) else os.path.join(STATIC_DIR, 'index.html')
+	
+	def end_headers(self):
+		# Disable caching for development
+		self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+		self.send_header('Pragma', 'no-cache')
+		self.send_header('Expires', '0')
+		super().end_headers()
 
 
 clients = set()
