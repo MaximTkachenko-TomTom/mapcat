@@ -166,9 +166,9 @@ def _log_success(cmd: str, line: str):
     parts = line.split(None, 1)  # Split on first whitespace
     params = parts[1] if len(parts) > 1 else ""
     
-    # Take first 20 characters of params, add "..." if truncated
-    if len(params) > 20:
-        params_preview = params[:20] + "..."
+    # Format: first 48 chars ... last 16 chars
+    if len(params) > 64:
+        params_preview = params[:48] + "..." + params[-16:]
     else:
         params_preview = params
     
@@ -189,9 +189,9 @@ def _log_error(cmd: str, message: str, line: str = ""):
         parts = line.split(None, 1)  # Split on first whitespace
         params = parts[1] if len(parts) > 1 else ""
         
-        # Take first 20 characters of params, add "..." if truncated
-        if len(params) > 20:
-            params_preview = params[:20] + "..."
+        # Format: first 48 chars ... last 16 chars
+        if len(params) > 64:
+            params_preview = params[:48] + "..." + params[-16:]
         else:
             params_preview = params
         
