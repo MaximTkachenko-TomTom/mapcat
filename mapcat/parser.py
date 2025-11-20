@@ -5,6 +5,10 @@ import re
 import sys
 from typing import Optional, Dict, List, Any
 
+# ANSI color codes
+RED = '\033[91m'
+RESET = '\033[0m'
+
 
 def parse_command(line: str) -> Optional[Dict[str, Any]]:
     """
@@ -132,5 +136,6 @@ def _tokenize(line: str) -> List[str]:
 
 
 def _log_error(message: str):
-    """Log error to stderr."""
-    print(f"Parser error: {message}", file=sys.stderr)
+    """Log error to stderr in red."""
+    print(f"{RED}FAIL: parse{RESET}", file=sys.stderr)
+    print(f"{RED}FAIL: {message}{RESET}", file=sys.stderr)

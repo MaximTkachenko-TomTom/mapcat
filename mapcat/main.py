@@ -11,6 +11,10 @@ from mapcat import server, parser
 from mapcat.state import State
 from mapcat.commands import COMMAND_HANDLERS
 
+# ANSI color codes
+RED = '\033[91m'
+RESET = '\033[0m'
+
 # Import readline for better REPL experience (arrow keys, history)
 try:
 	import readline
@@ -57,14 +61,18 @@ async def stdin_broadcast_loop(is_tty, state):
 			# Parse command
 			parsed = parser.parse_command(line)
 			if not parsed:
+				_log_error("parse", "Invalid command", line)
 				if is_tty:
 					print("< ERROR: Invalid command")
 				continue  # Parser already logged error
 			
+			# Add original line to parsed command for error reporting
+			parsed['_original_line'] = line
+			
 			# Get handler
 			handler = COMMAND_HANDLERS.get(parsed['cmd'])
 			if not handler:
-				_log_error(f"Unknown command: {parsed['cmd']}")
+				_log_error(parsed['cmd'], f"Unknown command", line)
 				if is_tty:
 					print(f"< ERROR: Unknown command '{parsed['cmd']}'")
 				continue
@@ -78,9 +86,10 @@ async def stdin_broadcast_loop(is_tty, state):
 				# Echo response in REPL mode
 				if is_tty:
 					print(f"< OK {parsed['cmd']} id={message.get('id', 'N/A')}")
-			elif is_tty and parsed['cmd'] != 'help':
-				# Handler returned None (failed), but not for help command
-				print(f"< ERROR: Command failed")
+			elif parsed['cmd'] != 'help':
+				# Handler returned None (failed) - error already logged by handler
+				if is_tty:
+					print(f"< ERROR: Command failed")
 	except KeyboardInterrupt:
 		if is_tty:
 			print("\nExit")
@@ -141,9 +150,30 @@ def main():
 	asyncio.run(runner())
 
 
-def _log_error(message: str):
-	"""Log error to stderr."""
-	print(f"Main error: {message}", file=sys.stderr)
+def _log_error(cmd: str, message: str, line: str = ""):
+    """
+    Log error to stderr in red with formatted output.
+    
+    Args:
+        cmd: The command that failed
+        message: The error message
+        line: Optional original command line
+    """
+    if line:
+        # Extract parameters (everything after command name)
+        parts = line.split(None, 1)  # Split on first whitespace
+        params = parts[1] if len(parts) > 1 else ""
+        
+        # Take first 20 characters of params, add "..." if truncated
+        if len(params) > 20:
+            params_preview = params[:20] + "..."
+        else:
+            params_preview = params
+        
+        print(f"{RED}FAIL: {cmd} {params_preview}{RESET}", file=sys.stderr)
+    else:
+        print(f"{RED}FAIL: {cmd}{RESET}", file=sys.stderr)
+    print(f"{RED}FAIL: {message}{RESET}", file=sys.stderr)
 
 
 if __name__ == "__main__":

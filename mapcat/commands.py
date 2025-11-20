@@ -5,6 +5,10 @@ import sys
 from typing import Optional, Dict, Any
 from mapcat.state import State
 
+# ANSI color codes
+RED = '\033[91m'
+RESET = '\033[0m'
+
 
 def handle_add_point(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """
@@ -19,7 +23,7 @@ def handle_add_point(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[
     """
     # Validate: exactly 1 coordinate required
     if len(parsed_cmd['coords']) != 1:
-        _log_error(f"add-point requires exactly 1 coordinate, got {len(parsed_cmd['coords'])}")
+        _log_error("add-point", f"add-point requires exactly 1 coordinate, got {len(parsed_cmd['coords'])}", parsed_cmd)
         return None
     
     user_id = parsed_cmd['params'].get('id')
@@ -51,7 +55,7 @@ def handle_add_point(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[
             'params': params
         }
     except ValueError as e:
-        _log_error(str(e))
+        _log_error("add-point", str(e), parsed_cmd)
         return None
 
 
@@ -68,7 +72,7 @@ def handle_add_polyline(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Di
     """
     # Validate: at least 2 coordinates required
     if len(parsed_cmd['coords']) < 2:
-        _log_error(f"add-polyline requires at least 2 coordinates, got {len(parsed_cmd['coords'])}")
+        _log_error("add-polyline", f"add-polyline requires at least 2 coordinates, got {len(parsed_cmd['coords'])}", parsed_cmd)
         return None
     
     user_id = parsed_cmd['params'].get('id')
@@ -104,7 +108,7 @@ def handle_add_polyline(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Di
             'params': params
         }
     except ValueError as e:
-        _log_error(str(e))
+        _log_error("add-polyline", str(e), parsed_cmd)
         return None
 
 
@@ -121,7 +125,7 @@ def handle_add_polygon(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dic
     """
     # Validate: at least 3 coordinates required
     if len(parsed_cmd['coords']) < 3:
-        _log_error(f"add-polygon requires at least 3 coordinates, got {len(parsed_cmd['coords'])}")
+        _log_error("add-polygon", f"add-polygon requires at least 3 coordinates, got {len(parsed_cmd['coords'])}", parsed_cmd)
         return None
     
     user_id = parsed_cmd['params'].get('id')
@@ -149,7 +153,7 @@ def handle_add_polygon(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dic
             'params': params
         }
     except ValueError as e:
-        _log_error(str(e))
+        _log_error("add-polygon", str(e), parsed_cmd)
         return None
 
 
@@ -168,11 +172,11 @@ def handle_remove(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str
     tag = parsed_cmd['params'].get('tag')
     
     if not feature_id and not tag:
-        _log_error("remove command requires either id or tag parameter")
+        _log_error("remove", "remove command requires either id or tag parameter", parsed_cmd)
         return None
     
     if feature_id and tag:
-        _log_error("remove command accepts either id or tag, not both")
+        _log_error("remove", "remove command accepts either id or tag, not both", parsed_cmd)
         return None
     
     if feature_id:
@@ -183,7 +187,7 @@ def handle_remove(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str
                 'id': feature_id
             }
         else:
-            _log_error(f"Feature with id '{feature_id}' not found")
+            _log_error("remove", f"Feature with id '{feature_id}' not found", parsed_cmd)
             return None
     else:
         # Remove by tag
@@ -195,7 +199,7 @@ def handle_remove(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[str
                 'ids': removed_ids
             }
         else:
-            _log_error(f"No features found with tag '{tag}'")
+            _log_error("remove", f"No features found with tag '{tag}'", parsed_cmd)
             return None
 
 
@@ -230,7 +234,7 @@ def handle_update_current_position(state: State, parsed_cmd: Dict[str, Any]) -> 
     """
     # Validate: exactly 1 coordinate required
     if len(parsed_cmd['coords']) != 1:
-        _log_error(f"update-current-position requires exactly 1 coordinate, got {len(parsed_cmd['coords'])}")
+        _log_error("update-current-position", f"update-current-position requires exactly 1 coordinate, got {len(parsed_cmd['coords'])}", parsed_cmd)
         return None
     
     return {
@@ -338,6 +342,29 @@ COMMAND_HANDLERS = {
 }
 
 
-def _log_error(message: str):
-    """Log error to stderr."""
-    print(f"Command error: {message}", file=sys.stderr)
+def _log_error(cmd: str, message: str, parsed_cmd: Dict[str, Any] = None):
+    """
+    Log error to stderr in red.
+    
+    Args:
+        cmd: Command name
+        message: Error message
+        parsed_cmd: Optional parsed command dict (to extract original line)
+    """
+    original_line = parsed_cmd.get('_original_line', '') if parsed_cmd else ''
+    
+    if original_line:
+        # Extract parameters (everything after command name)
+        parts = original_line.split(None, 1)  # Split on first whitespace
+        params = parts[1] if len(parts) > 1 else ""
+        
+        # Take first 20 characters of params, add "..." if truncated
+        if len(params) > 20:
+            params_preview = params[:20] + "..."
+        else:
+            params_preview = params
+        
+        print(f"{RED}FAIL: {cmd} {params_preview}{RESET}", file=sys.stderr)
+    else:
+        print(f"{RED}FAIL: {cmd}{RESET}", file=sys.stderr)
+    print(f"{RED}FAIL: {message}{RESET}", file=sys.stderr)
