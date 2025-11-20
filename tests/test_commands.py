@@ -27,7 +27,7 @@ def test_handle_add_point():
     assert result['action'] == 'add'
     assert result['type'] == 'point'
     assert result['coords'] == [52.5, 13.4]
-    assert result['params'] == {'color': 'red'}
+    assert result['params'] == {'color': 'red', 'opacity': 1.0, 'radius': 4, 'border': 2}
     assert 'id' in result
     assert len(state.features) == 1
 
