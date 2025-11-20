@@ -123,3 +123,33 @@ def test_parse_multiple_params():
         'width': '5',
         'opacity': '0.8'
     }
+
+
+def test_parse_incomplete_coordinate_single():
+    """Test that incomplete single coordinate is rejected."""
+    result = parse_command('add-point (52.5,13.4')
+    assert result is None
+
+
+def test_parse_incomplete_coordinate_polyline():
+    """Test that incomplete coordinate in polyline is rejected."""
+    result = parse_command('add-polyline (52.5,13.4);(52.6,13.5);(3.44')
+    assert result is None
+
+
+def test_parse_incomplete_coordinate_middle():
+    """Test that incomplete coordinate in the middle is rejected."""
+    result = parse_command('add-polyline (52.5,13.4);(52.6,;(52.7,13.7)')
+    assert result is None
+
+
+def test_parse_extra_closing_paren():
+    """Test that extra closing parenthesis is rejected."""
+    result = parse_command('add-point (52.5,13.4))')
+    assert result is None
+
+
+def test_parse_unmatched_nested_parens():
+    """Test that unmatched nested parentheses are rejected."""
+    result = parse_command('add-point ((52.5,13.4)')
+    assert result is None

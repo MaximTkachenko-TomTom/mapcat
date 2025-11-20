@@ -47,7 +47,14 @@ def parse_command(line: str) -> Optional[Dict[str, Any]]:
     
     for token in tokens[1:]:
         # Check if token is a coordinate
-        if '(' in token and ')' in token:
+        if '(' in token:
+            # Check for unmatched parentheses
+            open_count = token.count('(')
+            close_count = token.count(')')
+            if open_count != close_count:
+                _log_error(f"Incomplete coordinate: unmatched parentheses in '{token}'")
+                return None
+            
             matches = re.findall(coord_pattern, token)
             for match in matches:
                 parts = match.split(',')
