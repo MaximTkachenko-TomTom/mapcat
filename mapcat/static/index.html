@@ -43,6 +43,10 @@
         #controls button.clear:hover {
             background: #c82333;
         }
+        .leaflet-interactive:hover {
+            filter: drop-shadow(0 0 8px currentColor);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -203,6 +207,13 @@
                 weight: border
             }).addTo(map);
             
+            // Add hover effect for points
+            setupHoverEffect(layer, {
+                originalOpacity: opacity,
+                originalWeight: border,
+                originalRadius: radius
+            });
+            
             // Build tooltip text (label only, no tag)
             if (label) {
                 layer.bindTooltip(label, { permanent: false, direction: 'top' });
@@ -236,6 +247,12 @@
             });
             layerGroup.addLayer(line);
             
+            // Add hover effect for polyline
+            setupHoverEffect(line, {
+                originalOpacity: opacity,
+                originalWeight: width
+            });
+            
             // Add circle markers at each point (if markers > 0)
             if (markerRadius > 0) {
                 msg.coords.forEach(function(coord) {
@@ -248,6 +265,13 @@
                         weight: markerBorder
                     });
                     layerGroup.addLayer(marker);
+                    
+                    // Add hover effect for polyline markers
+                    setupHoverEffect(marker, {
+                        originalOpacity: opacity,
+                        originalWeight: markerBorder,
+                        originalRadius: markerRadius
+                    });
                 });
             }
             
@@ -280,6 +304,12 @@
                 opacity: opacity,
                 weight: border
             }).addTo(map);
+            
+            // Add hover effect for polygons
+            setupHoverEffect(layer, {
+                originalOpacity: opacity,
+                originalWeight: border
+            });
             
             // Build tooltip text (label only, no tag)
             if (label) {
@@ -357,6 +387,46 @@
         });
         features = {};
         console.log('Cleared all features');
+    }
+    
+    function setupHoverEffect(layer, originalStyle) {
+        layer.on('mouseover', function(e) {
+            // Increase opacity to full
+            var style = {
+                opacity: 1.0,
+                fillOpacity: 1.0
+            };
+            
+            // Increase weight for border glow effect
+            if (originalStyle.originalWeight !== undefined) {
+                style.weight = originalStyle.originalWeight + 2;
+            }
+            
+            // Slightly increase radius for points
+            if (originalStyle.originalRadius !== undefined) {
+                style.radius = originalStyle.originalRadius + 1;
+            }
+            
+            layer.setStyle(style);
+        });
+        
+        layer.on('mouseout', function(e) {
+            // Restore original style
+            var style = {
+                opacity: originalStyle.originalOpacity,
+                fillOpacity: originalStyle.originalOpacity
+            };
+            
+            if (originalStyle.originalWeight !== undefined) {
+                style.weight = originalStyle.originalWeight;
+            }
+            
+            if (originalStyle.originalRadius !== undefined) {
+                style.radius = originalStyle.originalRadius;
+            }
+            
+            layer.setStyle(style);
+        });
     }
     
     function updateCurrentPosition(coords) {
