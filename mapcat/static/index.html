@@ -211,7 +211,7 @@
             setupHoverEffect(layer, {
                 originalOpacity: opacity,
                 originalWeight: border,
-                originalRadius: radius
+                originalColor: color
             });
             
             // Build tooltip text (label only, no tag)
@@ -238,6 +238,7 @@
             
             // Create a layer group to hold both the line and point markers
             var layerGroup = L.layerGroup();
+            var markers = [];
             
             // Add the polyline
             var line = L.polyline(msg.coords, {
@@ -246,12 +247,6 @@
                 opacity: opacity
             });
             layerGroup.addLayer(line);
-            
-            // Add hover effect for polyline
-            setupHoverEffect(line, {
-                originalOpacity: opacity,
-                originalWeight: width
-            });
             
             // Add circle markers at each point (if markers > 0)
             if (markerRadius > 0) {
@@ -265,15 +260,17 @@
                         weight: markerBorder
                     });
                     layerGroup.addLayer(marker);
-                    
-                    // Add hover effect for polyline markers
-                    setupHoverEffect(marker, {
-                        originalOpacity: opacity,
-                        originalWeight: markerBorder,
-                        originalRadius: markerRadius
-                    });
+                    markers.push(marker);
                 });
             }
+            
+            // Add synchronized hover effect for polyline and its markers
+            setupPolylineHoverEffect(line, markers, {
+                originalOpacity: opacity,
+                originalWeight: width,
+                originalColor: color,
+                originalMarkerWeight: markerBorder
+            });
             
             layer = layerGroup;
             layer.addTo(map);
@@ -308,7 +305,8 @@
             // Add hover effect for polygons
             setupHoverEffect(layer, {
                 originalOpacity: opacity,
-                originalWeight: border
+                originalWeight: border,
+                originalColor: color
             });
             
             // Build tooltip text (label only, no tag)
@@ -391,20 +389,15 @@
     
     function setupHoverEffect(layer, originalStyle) {
         layer.on('mouseover', function(e) {
-            // Increase opacity to full
+            // Add yellow border without magnifying
             var style = {
-                opacity: 1.0,
-                fillOpacity: 1.0
+                color: '#FFD700',
+                weight: (originalStyle.originalWeight || 2) + 3
             };
             
-            // Increase weight for border glow effect
-            if (originalStyle.originalWeight !== undefined) {
-                style.weight = originalStyle.originalWeight + 2;
-            }
-            
-            // Slightly increase radius for points
-            if (originalStyle.originalRadius !== undefined) {
-                style.radius = originalStyle.originalRadius + 1;
+            // For points (circle markers), also change fill color to yellow
+            if (originalStyle.originalColor !== undefined) {
+                style.fillColor = '#FFD700';
             }
             
             layer.setStyle(style);
@@ -421,11 +414,56 @@
                 style.weight = originalStyle.originalWeight;
             }
             
-            if (originalStyle.originalRadius !== undefined) {
-                style.radius = originalStyle.originalRadius;
+            if (originalStyle.originalColor !== undefined) {
+                style.color = originalStyle.originalColor;
+                style.fillColor = originalStyle.originalColor;
             }
             
             layer.setStyle(style);
+        });
+    }
+    
+    function setupPolylineHoverEffect(line, markers, originalStyle) {
+        var applyHover = function() {
+            line.setStyle({
+                color: '#FFD700',
+                weight: (originalStyle.originalWeight || 2) + 3
+            });
+            
+            markers.forEach(function(marker) {
+                marker.setStyle({
+                    color: '#FFD700',
+                    fillColor: '#FFD700',
+                    weight: (originalStyle.originalMarkerWeight || 2) + 3
+                });
+            });
+        };
+        
+        var removeHover = function() {
+            line.setStyle({
+                opacity: originalStyle.originalOpacity,
+                color: originalStyle.originalColor,
+                weight: originalStyle.originalWeight
+            });
+            
+            markers.forEach(function(marker) {
+                marker.setStyle({
+                    opacity: originalStyle.originalOpacity,
+                    fillOpacity: originalStyle.originalOpacity,
+                    color: originalStyle.originalColor,
+                    fillColor: originalStyle.originalColor,
+                    weight: originalStyle.originalMarkerWeight
+                });
+            });
+        };
+        
+        // Apply hover to both line and markers
+        line.on('mouseover', applyHover);
+        line.on('mouseout', removeHover);
+        
+        markers.forEach(function(marker) {
+            marker.on('mouseover', applyHover);
+            marker.on('mouseout', removeHover);
         });
     }
     
