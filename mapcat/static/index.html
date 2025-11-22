@@ -216,7 +216,7 @@
             
             // Build tooltip text (label only, no tag)
             if (label) {
-                layer.bindTooltip(label, { permanent: false, direction: 'top' });
+                layer.bindTooltip(label, { permanent: false, direction: 'top', offset: [0, -15] });
             }
         } else if (msg.type === 'polyline') {
             var width = params.width;
@@ -280,7 +280,7 @@
             
             // Build tooltip text (label only, no tag)
             if (label) {
-                line.bindTooltip(label);
+                setupSmartTooltip(line, label, 'polyline', msg.coords);
             }
         } else if (msg.type === 'polygon') {
             var border = params.border;
@@ -313,7 +313,7 @@
             
             // Build tooltip text (label only, no tag)
             if (label) {
-                layer.bindTooltip(label);
+                setupSmartTooltip(layer, label, 'polygon', msg.coords);
             }
         } else {
             console.warn('Unknown feature type', msg.type);
@@ -427,6 +427,154 @@
             
             layer.setStyle(style);
         });
+    }
+    
+    function setupSmartTooltip(layer, label, featureType, coords) {
+        if (featureType === 'polyline') {
+            // For polylines, calculate perpendicular direction dynamically
+            layer.on('mousemove', function(e) {
+                var mouseLatLng = e.latlng;
+                var closestSegment = findClosestSegment(coords, mouseLatLng);
+                var direction = getPerpendicularDirection(closestSegment);
+                
+                // Update tooltip with calculated direction
+                layer.unbindTooltip();
+                layer.bindTooltip(label, { 
+                    direction: direction,
+                    offset: getOffsetForDirection(direction, 10)
+                });
+                layer.openTooltip(mouseLatLng);
+            });
+        } else if (featureType === 'polygon') {
+            // For polygons, position tooltip away from centroid
+            layer.on('mousemove', function(e) {
+                var mouseLatLng = e.latlng;
+                var centroid = calculateCentroid(coords);
+                var direction = getDirectionAwayFromPoint(centroid, mouseLatLng);
+                
+                // Update tooltip with calculated direction
+                layer.unbindTooltip();
+                layer.bindTooltip(label, { 
+                    direction: direction,
+                    offset: getOffsetForDirection(direction, 10)
+                });
+                layer.openTooltip(mouseLatLng);
+            });
+        }
+    }
+    
+    function findClosestSegment(coords, point) {
+        var minDist = Infinity;
+        var closestSegment = null;
+        
+        for (var i = 0; i < coords.length - 1; i++) {
+            var p1 = coords[i];
+            var p2 = coords[i + 1];
+            var dist = pointToSegmentDistance(point, p1, p2);
+            
+            if (dist < minDist) {
+                minDist = dist;
+                closestSegment = { p1: p1, p2: p2 };
+            }
+        }
+        
+        return closestSegment;
+    }
+    
+    function pointToSegmentDistance(point, segStart, segEnd) {
+        var lat = point.lat;
+        var lng = point.lng;
+        var lat1 = segStart[0];
+        var lng1 = segStart[1];
+        var lat2 = segEnd[0];
+        var lng2 = segEnd[1];
+        
+        var A = lat - lat1;
+        var B = lng - lng1;
+        var C = lat2 - lat1;
+        var D = lng2 - lng1;
+        
+        var dot = A * C + B * D;
+        var lenSq = C * C + D * D;
+        var param = lenSq !== 0 ? dot / lenSq : -1;
+        
+        var xx, yy;
+        
+        if (param < 0) {
+            xx = lat1;
+            yy = lng1;
+        } else if (param > 1) {
+            xx = lat2;
+            yy = lng2;
+        } else {
+            xx = lat1 + param * C;
+            yy = lng1 + param * D;
+        }
+        
+        var dx = lat - xx;
+        var dy = lng - yy;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    function getPerpendicularDirection(segment) {
+        var lat1 = segment.p1[0];
+        var lng1 = segment.p1[1];
+        var lat2 = segment.p2[0];
+        var lng2 = segment.p2[1];
+        
+        var dLat = lat2 - lat1;
+        var dLng = lng2 - lng1;
+        
+        // Calculate angle of the line segment
+        var angle = Math.atan2(dLat, dLng) * 180 / Math.PI;
+        
+        // Normalize to 0-360
+        if (angle < 0) angle += 360;
+        
+        // Determine perpendicular direction (prefer upward/rightward)
+        if (angle >= 45 && angle < 135) {
+            return 'right'; // Line goes up, tooltip to the right
+        } else if (angle >= 135 && angle < 225) {
+            return 'top'; // Line goes left, tooltip above
+        } else if (angle >= 225 && angle < 315) {
+            return 'left'; // Line goes down, tooltip to the left
+        } else {
+            return 'top'; // Line goes right, tooltip above (not below)
+        }
+    }
+    
+    function calculateCentroid(coords) {
+        var latSum = 0, lngSum = 0;
+        coords.forEach(function(coord) {
+            latSum += coord[0];
+            lngSum += coord[1];
+        });
+        return {
+            lat: latSum / coords.length,
+            lng: lngSum / coords.length
+        };
+    }
+    
+    function getDirectionAwayFromPoint(fromPoint, toPoint) {
+        var dLat = toPoint.lat - fromPoint.lat;
+        var dLng = toPoint.lng - fromPoint.lng;
+        
+        // Determine primary direction
+        if (Math.abs(dLat) > Math.abs(dLng)) {
+            return dLat > 0 ? 'top' : 'bottom';
+        } else {
+            return dLng > 0 ? 'right' : 'left';
+        }
+    }
+    
+    function getOffsetForDirection(direction, distance) {
+        switch(direction) {
+            case 'top': return [0, -distance];
+            case 'bottom': return [0, distance];
+            case 'left': return [-distance, 0];
+            case 'right': return [distance, 0];
+            default: return [0, -distance];
+        }
     }
     
     function updateCurrentPosition(coords) {
