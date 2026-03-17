@@ -3,14 +3,52 @@
 WebSocket and HTTP server for mapcat.
 """
 import asyncio
-import websockets
+import functools
 import os
+import subprocess
+import websockets
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import threading
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 
+
+@functools.lru_cache(maxsize=1)
+def _build_version() -> str:
+    """Return version string 'YYYY-DD-MM.shortHash' from the last git commit."""
+    try:
+        result = subprocess.run(
+            ['git', 'log', '-1', '--format=%cd %h', '--date=format:%Y-%m-%d'],
+            capture_output=True, text=True, check=True,
+            cwd=os.path.dirname(__file__),
+        )
+        parts = result.stdout.strip().split()
+        if len(parts) == 2:
+            return f"{parts[0]}.{parts[1]}"
+    except Exception:
+        pass
+    return 'unknown'
+
+
 class StaticHandler(SimpleHTTPRequestHandler):
+	def do_GET(self):
+		clean_path = self.path.split('?')[0].rstrip('/')
+		if clean_path in ('', '/index.html'):
+			self._serve_index()
+		else:
+			super().do_GET()
+
+	def _serve_index(self):
+		html_path = os.path.join(STATIC_DIR, 'index.html')
+		with open(html_path, 'r', encoding='utf-8') as f:
+			content = f.read().replace('__VERSION__', _build_version())
+		encoded = content.encode('utf-8')
+		self.send_response(200)
+		self.send_header('Content-Type', 'text/html; charset=utf-8')
+		self.send_header('Content-Length', str(len(encoded)))
+		self.end_headers()
+		self.wfile.write(encoded)
+
 	def translate_path(self, path):
 		# Serve files from static directory
 		relpath = path.lstrip('/')
