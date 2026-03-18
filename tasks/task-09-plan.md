@@ -50,7 +50,7 @@ Map style is a **frontend concern only** — no changes to the Python backend.
 | File | Change | Status |
 |---|---|---|
 | `mapcat/static/index.html` | Full rewrite: Leaflet → MapLibre GL + style-change UI | ✅ Done |
-| `README.md` | Add Map Style section | ⬜ Pending |
+| `README.md` | Add Map Style section | ✅ Done |
 
 ## Notes
 - TomTom Orbis style URL (from map-playground): `https://api.tomtom.com/maps/orbis/assets/styles/0.0.*/style?key=<api_key>&map=basic_street-light-driving&hillshade=hillshade_light&navigationAndRoute=navigation_and_route_light&poi=poi_light&range=range_light&apiVersion=1&renderer=premium`

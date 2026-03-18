@@ -99,21 +99,41 @@ Run `help` in REPL mode to see detailed documentation for all commands.
 - `width=<pixels>` - Line width for polylines (default: `2`)
 - `markers=<pixels>` - Circle radius at polyline points (`0`=off, default: `0`)
 
+## Map Style
+
+By default, Mapcat uses **OpenStreetMap** raster tiles — no API key required.
+
+To switch to a different map style (e.g. TomTom Orbis vector):
+
+1. Click **▶ Map style** in the top-right controls panel.
+2. Paste a MapLibre GL style URL into the **Style URL** field.
+3. If the URL contains the `<api_key>` placeholder, a second **API key** field appears automatically.
+4. Click **Apply** — the map switches to the new style immediately.
+5. Click **Reset to default** to revert to OSM and clear saved settings.
+
+The style URL and API key are saved to `localStorage` (`mapcat_style_url`, `mapcat_api_key`) and restored automatically on the next page load.
+
+**TomTom Orbis style URL:**
+```
+https://api.tomtom.com/maps/orbis/assets/styles/0.0.*/style?key=<api_key>&map=basic_street-light-driving&hillshade=hillshade_light&navigationAndRoute=navigation_and_route_light&poi=poi_light&range=range_light&apiVersion=1&renderer=premium
+```
+
 ## Features
 
 - Real-time visualization of geographic data
-- Interactive web map with Leaflet.js and OpenStreetMap
+- Interactive web map with MapLibre GL and OpenStreetMap
 - Support for points, polylines, and polygons
 - Customizable colors, opacity, and styling
 - REPL and piped modes
 - Position tracking with directional chevron
 - Tag-based feature grouping
 - Auto-focus and follow position controls
-- No API keys required
+- Switchable map style with optional API key
+- No API keys required for default OSM style
 
 ## Tech Stack
 
 - **CLI Tool**: Python 3.11+
 - **Web Server**: HTTP + WebSocket
-- **Map Library**: Leaflet.js with OpenStreetMap tiles
+- **Map Library**: MapLibre GL with OpenStreetMap tiles (default)
 - **Frontend**: Static HTML page served locally
