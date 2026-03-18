@@ -5,9 +5,10 @@
     <title>Mapcat</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link href="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.css" rel="stylesheet"/>
     <style>
-        #map { width: 100vw; height: 100vh; margin: 0; }
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
         #controls {
             position: absolute;
             top: 10px;
@@ -17,11 +18,12 @@
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            min-width: 175px;
         }
         #controls button {
             display: block;
             width: 100%;
-            margin: 5px 0;
+            margin: 4px 0;
             padding: 8px 12px;
             background: #007cff;
             color: white;
@@ -29,24 +31,42 @@
             border-radius: 3px;
             cursor: pointer;
             font-size: 14px;
+            text-align: left;
+            box-sizing: border-box;
         }
-        #controls button:hover {
-            background: #0056b3;
+        #controls button:hover { background: #0056b3; }
+        #controls button.active { background: #28a745; }
+        #controls button.active:hover { background: #1e7e34; }
+        #controls button.clear { background: #dc3545; }
+        #controls button.clear:hover { background: #c82333; }
+        #controls button.toggle { background: #6c757d; }
+        #controls button.toggle:hover { background: #545b62; }
+        #controls button.reset {
+            background: transparent;
+            color: #007cff;
+            border: 1px solid #007cff;
+            margin-top: 4px;
         }
-        #controls button.active {
-            background: #28a745;
+        #controls button.reset:hover { background: #007cff; color: white; }
+        #controls hr { border: none; border-top: 1px solid #ddd; margin: 6px 0; }
+        #mapStylePanel { margin-top: 4px; }
+        #mapStylePanel input[type="text"] {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 13px;
+            margin-bottom: 4px;
         }
-        #controls button.clear {
-            background: #dc3545;
-            margin-top: 10px;
-        }
-        #controls button.clear:hover {
-            background: #c82333;
-        }
-        .leaflet-interactive:hover {
-            filter: drop-shadow(0 0 8px currentColor);
-            cursor: pointer;
-        }
+        #mapStylePanel input[type="text"]:focus { border-color: #007cff; outline: none; }
+        .style-actions { display: flex; gap: 4px; }
+        .style-actions button { flex: 1; margin: 0; }
+        .style-actions .apply { background: #007cff; }
+        .style-actions .apply:hover { background: #0056b3; }
+        .style-actions .cancel { background: #6c757d; }
+        .style-actions .cancel:hover { background: #545b62; }
         #version-badge {
             position: absolute;
             bottom: 10px;
@@ -67,26 +87,30 @@
             user-select: none;
             pointer-events: none;
         }
-        #version-badge .logo {
-            width: 32px;
-            height: 32px;
-            flex-shrink: 0;
-        }
-        #version-badge .brand {
-            font-weight: 700;
-        }
-        #version-badge .ver {
-            color: white;
-            font-weight: 400;
-            text-transform: uppercase;
-        }
+        #version-badge .logo { width: 32px; height: 32px; flex-shrink: 0; }
+        #version-badge .brand { font-weight: 700; }
+        #version-badge .ver { color: white; font-weight: 400; text-transform: uppercase; }
     </style>
 </head>
 <body>
     <div id="controls">
         <button id="autofocusBtn" class="active">Auto-focus: ON</button>
         <button id="followPositionBtn">Follow Position: OFF</button>
+        <hr>
         <button id="clearBtn" class="clear">Clear</button>
+        <hr>
+        <button id="mapStyleToggle" class="toggle">&#9658; Map style</button>
+        <div id="mapStylePanel" style="display:none">
+            <input type="text" id="styleUrlInput" placeholder="Style URL..."/>
+            <div id="apiKeySection" style="display:none">
+                <input type="text" id="apiKeyInput" placeholder="API key..."/>
+            </div>
+            <div class="style-actions">
+                <button class="apply" id="applyStyleBtn">Apply</button>
+                <button class="cancel" id="cancelStyleBtn">Cancel</button>
+            </div>
+            <button class="reset" id="resetStyleBtn">Reset to default</button>
+        </div>
     </div>
     <div id="version-badge">
         <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -103,63 +127,97 @@
         <span class="ver">__VERSION__</span>
     </div>
     <div id="map"></div>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
     <script>
-    // Initialize map
-    var map = L.map('map').setView([52.527913, 13.416302], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
-    }).addTo(map);
+    // Default OSM raster style — no API key required
+    var DEFAULT_STYLE = {
+        version: 8,
+        sources: {
+            osm: {
+                type: 'raster',
+                tiles: [
+                    'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+                ],
+                tileSize: 256,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }
+        },
+        layers: [{ id: 'osm-tiles', type: 'raster', source: 'osm' }]
+    };
 
-    // Store features by ID
+    function resolveInitialStyle() {
+        var savedUrl = localStorage.getItem('mapcat_style_url');
+        var savedKey = localStorage.getItem('mapcat_api_key');
+        if (savedUrl) {
+            return savedKey ? savedUrl.replace('<api_key>', savedKey) : savedUrl;
+        }
+        return DEFAULT_STYLE;
+    }
+
+    var map = new maplibregl.Map({
+        container: 'map',
+        style: resolveInitialStyle(),
+        center: [13.416302, 52.527913],
+        zoom: 14
+    });
+
+    // features: id -> { msg, layerIds, geoCoords }
     var features = {};
-    
-    // Current position state
+    // IDs removed while a style reload is in progress; filtered out on re-render
+    var pendingRemovals = null;
     var currentPositionMarker = null;
     var previousPosition = null;
     var followPosition = false;
-    
-    // Auto-focus state
     var autofocus = true;
 
-    // Control panel
+    var tooltip = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 12
+    });
+
+    // Re-render all features after every style change (initial load + setStyle calls)
+    map.on('style.load', function() {
+        var savedFeatures = Object.assign({}, features);
+        features = {};
+        pendingRemovals = {};
+        var savedAutofocus = autofocus;
+        autofocus = false;
+        Object.keys(savedFeatures).forEach(function(id) {
+            if (!pendingRemovals[id]) renderFeature(savedFeatures[id].msg);
+        });
+        pendingRemovals = null;
+        autofocus = savedAutofocus;
+    });
+
+    // ── Control panel ──────────────────────────────────────────────────────────
+
     var autofocusBtn = document.getElementById('autofocusBtn');
     autofocusBtn.addEventListener('click', function() {
         autofocus = !autofocus;
-        if (autofocus) {
-            autofocusBtn.textContent = 'Auto-focus: ON';
-            autofocusBtn.className = 'active';
-        } else {
-            autofocusBtn.textContent = 'Auto-focus: OFF';
-            autofocusBtn.className = '';
-        }
+        autofocusBtn.textContent = autofocus ? 'Auto-focus: ON' : 'Auto-focus: OFF';
+        autofocusBtn.className = autofocus ? 'active' : '';
     });
-    
+
     var followPositionBtn = document.getElementById('followPositionBtn');
     followPositionBtn.addEventListener('click', function() {
         followPosition = !followPosition;
-        if (followPosition) {
-            followPositionBtn.textContent = 'Follow Position: ON';
-            followPositionBtn.className = 'active';
-        } else {
-            followPositionBtn.textContent = 'Follow Position: OFF';
-            followPositionBtn.className = '';
-        }
+        followPositionBtn.textContent = followPosition ? 'Follow Position: ON' : 'Follow Position: OFF';
+        followPositionBtn.className = followPosition ? 'active' : '';
     });
-    
-    var clearBtn = document.getElementById('clearBtn');
-    clearBtn.addEventListener('click', function() {
+
+    document.getElementById('clearBtn').addEventListener('click', function() {
         clearAllFeatures();
-        // Also remove current position marker
         if (currentPositionMarker) {
-            map.removeLayer(currentPositionMarker);
+            currentPositionMarker.remove();
             currentPositionMarker = null;
             previousPosition = null;
         }
     });
-    
-    // Disable auto-focus and follow position when user drags the map
+
+    // Disable auto-focus and follow when user drags the map
     map.on('dragstart', function() {
         if (autofocus) {
             autofocus = false;
@@ -173,23 +231,76 @@
         }
     });
 
-    // WebSocket connection
-    var ws_port = (location.port ? (parseInt(location.port) + 1) : 8081);
-    var ws_url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + ':' + ws_port;
+    // ── Map style sub-panel ────────────────────────────────────────────────────
+
+    var mapStyleToggle = document.getElementById('mapStyleToggle');
+    var mapStylePanel  = document.getElementById('mapStylePanel');
+    var styleUrlInput  = document.getElementById('styleUrlInput');
+    var apiKeyInput    = document.getElementById('apiKeyInput');
+    var apiKeySection  = document.getElementById('apiKeySection');
+
+    // Restore saved values into inputs on load
+    styleUrlInput.value = localStorage.getItem('mapcat_style_url') || '';
+    apiKeyInput.value   = localStorage.getItem('mapcat_api_key')   || '';
+    if (styleUrlInput.value.indexOf('<api_key>') !== -1) {
+        apiKeySection.style.display = 'block';
+    }
+
+    mapStyleToggle.addEventListener('click', function() {
+        var open = mapStylePanel.style.display !== 'none';
+        mapStylePanel.style.display = open ? 'none' : 'block';
+        mapStyleToggle.innerHTML = (open ? '&#9658;' : '&#9660;') + ' Map style';
+    });
+
+    styleUrlInput.addEventListener('input', function() {
+        apiKeySection.style.display =
+            styleUrlInput.value.indexOf('<api_key>') !== -1 ? 'block' : 'none';
+    });
+
+    document.getElementById('applyStyleBtn').addEventListener('click', function() {
+        var url = styleUrlInput.value.trim();
+        if (!url) return;
+        var key = apiKeyInput.value.trim();
+        var resolved = key ? url.replace('<api_key>', key) : url;
+        localStorage.setItem('mapcat_style_url', url);
+        if (key) {
+            localStorage.setItem('mapcat_api_key', key);
+        } else {
+            localStorage.removeItem('mapcat_api_key');
+        }
+        map.setStyle(resolved);
+        mapStylePanel.style.display = 'none';
+        mapStyleToggle.innerHTML = '&#9658; Map style';
+    });
+
+    document.getElementById('cancelStyleBtn').addEventListener('click', function() {
+        styleUrlInput.value = localStorage.getItem('mapcat_style_url') || '';
+        apiKeyInput.value   = localStorage.getItem('mapcat_api_key')   || '';
+        apiKeySection.style.display =
+            styleUrlInput.value.indexOf('<api_key>') !== -1 ? 'block' : 'none';
+        mapStylePanel.style.display = 'none';
+        mapStyleToggle.innerHTML = '&#9658; Map style';
+    });
+
+    document.getElementById('resetStyleBtn').addEventListener('click', function() {
+        localStorage.removeItem('mapcat_style_url');
+        localStorage.removeItem('mapcat_api_key');
+        styleUrlInput.value = '';
+        apiKeyInput.value   = '';
+        apiKeySection.style.display = 'none';
+        map.setStyle(DEFAULT_STYLE);
+        mapStylePanel.style.display = 'none';
+        mapStyleToggle.innerHTML = '&#9658; Map style';
+    });
+
+    // ── WebSocket ──────────────────────────────────────────────────────────────
+
+    var ws_port = location.port ? (parseInt(location.port) + 1) : 8081;
+    var ws_url  = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + ':' + ws_port;
     var ws = new WebSocket(ws_url);
-
-    ws.onopen = function() {
-        console.log('WebSocket connected');
-    };
-    
-    ws.onclose = function() {
-        console.log('WebSocket disconnected');
-    };
-    
-    ws.onerror = function(e) {
-        console.error('WebSocket error', e);
-    };
-
+    ws.onopen  = function()  { console.log('WebSocket connected'); };
+    ws.onclose = function()  { console.log('WebSocket disconnected'); };
+    ws.onerror = function(e) { console.error('WebSocket error', e); };
     ws.onmessage = function(event) {
         try {
             var msg = JSON.parse(event.data);
@@ -201,225 +312,219 @@
     };
 
     function handleMessage(msg) {
-        if (!msg || !msg.action) {
-            console.warn('Message missing action', msg);
-            return;
-        }
-
-        if (msg.action === 'add') {
-            addFeature(msg);
-        } else if (msg.action === 'remove') {
-            removeFeature(msg.id);
-        } else if (msg.action === 'remove-by-tag') {
-            removeFeaturesByTag(msg.ids);
-        } else if (msg.action === 'clear') {
-            clearAllFeatures();
-        } else if (msg.action === 'update-current-position') {
-            updateCurrentPosition(msg.coords);
-        } else {
-            console.warn('Unknown action', msg.action);
-        }
+        if (!msg || !msg.action) { console.warn('Message missing action', msg); return; }
+        if      (msg.action === 'add')                     renderFeature(msg);
+        else if (msg.action === 'remove')                  removeFeature(msg.id);
+        else if (msg.action === 'remove-by-tag')           removeFeaturesByTag(msg.ids);
+        else if (msg.action === 'clear')                   clearAllFeatures();
+        else if (msg.action === 'update-current-position') updateCurrentPosition(msg.coords);
+        else console.warn('Unknown action', msg.action);
     }
 
-    function addFeature(msg) {
-        var layer;
-        var params = msg.params || {};
-        var color = params.color;
-        var label = params.label;
-        var tag = params.tag;
-        var opacity = params.opacity;
+    // ── Coordinate helpers ─────────────────────────────────────────────────────
+    // Protocol sends [lat, lng]; GeoJSON requires [lng, lat].
+
+    function toGeoCoord(c)   { return [c[1], c[0]]; }
+    function toGeoCoords(cs) { return cs.map(toGeoCoord); }
+
+    function coordsBbox(geoCoords) {
+        var minLng =  Infinity, minLat =  Infinity;
+        var maxLng = -Infinity, maxLat = -Infinity;
+        geoCoords.forEach(function(c) {
+            if (c[0] < minLng) minLng = c[0];
+            if (c[1] < minLat) minLat = c[1];
+            if (c[0] > maxLng) maxLng = c[0];
+            if (c[1] > maxLat) maxLat = c[1];
+        });
+        return [[minLng, minLat], [maxLng, maxLat]];
+    }
+
+    function allFeaturesBbox() {
+        var all = [];
+        Object.values(features).forEach(function(f) { all = all.concat(f.geoCoords); });
+        return all.length ? coordsBbox(all) : null;
+    }
+
+    // ── Hover + tooltip ────────────────────────────────────────────────────────
+
+    function addLayerHover(layerId, paintProps, layerType, label) {
+        map.on('mouseenter', layerId, function(e) {
+            map.getCanvas().style.cursor = 'pointer';
+            if (label) tooltip.setLngLat(e.lngLat).setHTML(label).addTo(map);
+            if (layerType === 'circle') {
+                map.setPaintProperty(layerId, 'circle-color', '#FFD700');
+                map.setPaintProperty(layerId, 'circle-stroke-color', '#FFD700');
+            } else if (layerType === 'line') {
+                map.setPaintProperty(layerId, 'line-color', '#FFD700');
+                if (paintProps['line-width'] !== undefined) {
+                    map.setPaintProperty(layerId, 'line-width', paintProps['line-width'] + 3);
+                }
+            } else if (layerType === 'fill') {
+                map.setPaintProperty(layerId, 'fill-color', '#FFD700');
+            }
+        });
+        map.on('mousemove', layerId, function(e) {
+            if (label) tooltip.setLngLat(e.lngLat);
+        });
+        map.on('mouseleave', layerId, function() {
+            map.getCanvas().style.cursor = '';
+            tooltip.remove();
+            Object.keys(paintProps).forEach(function(prop) {
+                map.setPaintProperty(layerId, prop, paintProps[prop]);
+            });
+        });
+    }
+
+    // ── Feature rendering ──────────────────────────────────────────────────────
+
+    function renderFeature(msg) {
+        if (features[msg.id]) removeFeatureLayers(msg.id);
+
+        var params    = msg.params || {};
+        var color     = params.color   !== undefined ? params.color   : '#007cff';
+        var label     = params.label   !== undefined ? params.label   : null;
+        var opacity   = params.opacity !== undefined ? params.opacity : 1;
+        var layerIds  = [];
+        var geoCoords = [];
 
         if (msg.type === 'point') {
-            var radius = params.radius;
-            var border = params.border;
-            
-            // Validate required parameters
-            if (color === undefined || opacity === undefined || radius === undefined || border === undefined) {
-                console.error('Missing required parameters for point:', msg);
-                console.error('Required: color, opacity, radius, border');
-                ws.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Missing required parameters for point: color, opacity, radius, border',
-                    feature: msg
-                }));
-                return;
-            }
-            
-            layer = L.circleMarker(msg.coords, {
-                radius: radius,
-                color: color,
-                fillColor: color,
-                fillOpacity: opacity,
-                opacity: opacity,
-                weight: border
-            }).addTo(map);
-            
-            // Add hover effect for points
-            setupHoverEffect(layer, {
-                originalOpacity: opacity,
-                originalWeight: border,
-                originalColor: color
+            var radius = params.radius !== undefined ? params.radius : 4;
+            var border = params.border !== undefined ? params.border : 2;
+            var gc = toGeoCoord(msg.coords);
+            geoCoords = [gc];
+
+            var srcId = 'src-' + msg.id;
+            var lyrId = 'lyr-' + msg.id + '-circle';
+            map.addSource(srcId, {
+                type: 'geojson',
+                data: { type: 'Feature', geometry: { type: 'Point', coordinates: gc }, properties: {} }
             });
-            
-            // Build tooltip text (label only, no tag)
-            if (label) {
-                layer.bindTooltip(label, { permanent: false, direction: 'top', offset: [0, -15] });
-            }
+            var paint = {
+                'circle-radius':         radius,
+                'circle-color':          color,
+                'circle-opacity':        opacity,
+                'circle-stroke-width':   border,
+                'circle-stroke-color':   color,
+                'circle-stroke-opacity': opacity
+            };
+            map.addLayer({ id: lyrId, type: 'circle', source: srcId, paint: paint });
+            addLayerHover(lyrId, paint, 'circle', label);
+            layerIds.push(lyrId);
+
         } else if (msg.type === 'polyline') {
-            var width = params.width;
-            var markerRadius = params.markers;
-            var markerBorder = params.markerBorder;
-            
-            // Validate required parameters
-            if (color === undefined || opacity === undefined || width === undefined || 
-                markerRadius === undefined || markerBorder === undefined) {
-                console.error('Missing required parameters for polyline:', msg);
-                console.error('Required: color, opacity, width, markers, markerBorder');
-                ws.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Missing required parameters for polyline: color, opacity, width, markers, markerBorder',
-                    feature: msg
-                }));
-                return;
-            }
-            
-            // Create a layer group to hold both the line and point markers
-            var layerGroup = L.layerGroup();
-            var markers = [];
-            
-            // Add the polyline
-            var line = L.polyline(msg.coords, {
-                color: color,
-                weight: width,
-                opacity: opacity
+            var width        = params.width        !== undefined ? params.width        : 2;
+            var markerRadius = params.markers      !== undefined ? params.markers      : 0;
+            var markerBorder = params.markerBorder !== undefined ? params.markerBorder : 2;
+            geoCoords = toGeoCoords(msg.coords);
+
+            var srcId     = 'src-' + msg.id;
+            var lyrLineId = 'lyr-' + msg.id + '-line';
+            map.addSource(srcId, {
+                type: 'geojson',
+                data: { type: 'Feature', geometry: { type: 'LineString', coordinates: geoCoords }, properties: {} }
             });
-            layerGroup.addLayer(line);
-            
-            // Add circle markers at each point (if markers > 0)
+            var linePaint = {
+                'line-color':   color,
+                'line-width':   width,
+                'line-opacity': opacity
+            };
+            map.addLayer({ id: lyrLineId, type: 'line', source: srcId, paint: linePaint });
+            addLayerHover(lyrLineId, linePaint, 'line', label);
+            layerIds.push(lyrLineId);
+
             if (markerRadius > 0) {
-                msg.coords.forEach(function(coord) {
-                    var marker = L.circleMarker(coord, {
-                        radius: markerRadius,
-                        color: color,
-                        fillColor: color,
-                        fillOpacity: opacity,
-                        opacity: opacity,
-                        weight: markerBorder
-                    });
-                    layerGroup.addLayer(marker);
-                    markers.push(marker);
+                var srcPtsId = 'src-' + msg.id + '-pts';
+                var lyrPtsId = 'lyr-' + msg.id + '-pts';
+                map.addSource(srcPtsId, {
+                    type: 'geojson',
+                    data: { type: 'Feature', geometry: { type: 'MultiPoint', coordinates: geoCoords }, properties: {} }
                 });
+                var ptsPaint = {
+                    'circle-radius':         markerRadius,
+                    'circle-color':          color,
+                    'circle-opacity':        opacity,
+                    'circle-stroke-width':   markerBorder,
+                    'circle-stroke-color':   color,
+                    'circle-stroke-opacity': opacity
+                };
+                map.addLayer({ id: lyrPtsId, type: 'circle', source: srcPtsId, paint: ptsPaint });
+                addLayerHover(lyrPtsId, ptsPaint, 'circle', label);
+                layerIds.push(lyrPtsId);
             }
-            
-            // Add synchronized hover effect for polyline and its markers
-            setupPolylineHoverEffect(line, markers, {
-                originalOpacity: opacity,
-                originalWeight: width,
-                originalColor: color,
-                originalMarkerWeight: markerBorder
-            });
-            
-            layer = layerGroup;
-            layer.addTo(map);
-            
-            // Build tooltip text (label only, no tag)
-            if (label) {
-                setupSmartTooltip(line, label, 'polyline', msg.coords);
-            }
+
         } else if (msg.type === 'polygon') {
-            var border = params.border;
-            
-            // Validate required parameters
-            if (color === undefined || opacity === undefined || border === undefined) {
-                console.error('Missing required parameters for polygon:', msg);
-                console.error('Required: color, opacity, border');
-                ws.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Missing required parameters for polygon: color, opacity, border',
-                    feature: msg
-                }));
+            var border = params.border !== undefined ? params.border : 2;
+            geoCoords = toGeoCoords(msg.coords);
+            if (geoCoords.length === 0) {
+                console.error('Empty coordinates for polygon', msg);
                 return;
             }
-            
-            layer = L.polygon(msg.coords, {
-                color: color,
-                fillColor: color,
-                fillOpacity: opacity,
-                opacity: opacity,
-                weight: border
-            }).addTo(map);
-            
-            // Add hover effect for polygons
-            setupHoverEffect(layer, {
-                originalOpacity: opacity,
-                originalWeight: border,
-                originalColor: color
+            // GeoJSON Polygon ring must be closed
+            var ring = geoCoords.concat([geoCoords[0]]);
+
+            var srcId        = 'src-' + msg.id;
+            var lyrFillId    = 'lyr-' + msg.id + '-fill';
+            var lyrOutlineId = 'lyr-' + msg.id + '-outline';
+            map.addSource(srcId, {
+                type: 'geojson',
+                data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: {} }
             });
-            
-            // Build tooltip text (label only, no tag)
-            if (label) {
-                setupSmartTooltip(layer, label, 'polygon', msg.coords);
-            }
+            var fillPaint    = { 'fill-color': color, 'fill-opacity': opacity };
+            var outlinePaint = { 'line-color': color, 'line-width': border, 'line-opacity': opacity };
+            map.addLayer({ id: lyrFillId,    type: 'fill', source: srcId, paint: fillPaint });
+            map.addLayer({ id: lyrOutlineId, type: 'line', source: srcId, paint: outlinePaint });
+            addLayerHover(lyrFillId,    fillPaint,    'fill', label);
+            addLayerHover(lyrOutlineId, outlinePaint, 'line', label);
+            layerIds.push(lyrFillId);
+            layerIds.push(lyrOutlineId);
+
         } else {
             console.warn('Unknown feature type', msg.type);
             return;
         }
 
-        features[msg.id] = layer;
-        
-        // Auto-fit bounds to show all features (if autofocus enabled)
-        if (autofocus && Object.keys(features).length > 0) {
-            var bounds = null;
-            Object.values(features).forEach(function(feature) {
-                var featureBounds = null;
-                if (feature.getBounds) {
-                    featureBounds = feature.getBounds();
-                } else if (feature.getLatLng) {
-                    // Single marker
-                    var latlng = feature.getLatLng();
-                    featureBounds = L.latLngBounds([latlng, latlng]);
-                } else if (feature instanceof L.LayerGroup) {
-                    // For LayerGroups (like polylines with markers), calculate bounds from all layers
-                    var groupBounds = null;
-                    feature.eachLayer(function(subLayer) {
-                        if (subLayer.getBounds) {
-                            var subBounds = subLayer.getBounds();
-                            groupBounds = groupBounds ? groupBounds.extend(subBounds) : subBounds;
-                        } else if (subLayer.getLatLng) {
-                            var latlng = subLayer.getLatLng();
-                            groupBounds = groupBounds ? groupBounds.extend(latlng) : L.latLngBounds([latlng, latlng]);
-                        }
-                    });
-                    featureBounds = groupBounds;
+        features[msg.id] = { msg: msg, layerIds: layerIds, geoCoords: geoCoords };
+
+        if (autofocus) {
+            var bbox = allFeaturesBbox();
+            if (bbox) {
+                var sw = bbox[0], ne = bbox[1];
+                if (sw[0] === ne[0] && sw[1] === ne[1]) {
+                    map.flyTo({ center: sw, zoom: map.getZoom() });
+                } else {
+                    map.fitBounds(bbox, { padding: 50 });
                 }
-                
-                if (featureBounds) {
-                    bounds = bounds ? bounds.extend(featureBounds) : featureBounds;
-                }
-            });
-            
-            if (bounds) {
-                map.fitBounds(bounds, { padding: [20, 20] });
             }
         }
     }
 
+    function removeFeatureLayers(id) {
+        var f = features[id];
+        if (!f) return;
+        f.layerIds.forEach(function(lyrId) {
+            if (map.getLayer(lyrId)) map.removeLayer(lyrId);
+        });
+        ['src-' + id, 'src-' + id + '-pts'].forEach(function(srcId) {
+            if (map.getSource(srcId)) map.removeSource(srcId);
+        });
+    }
+
     function removeFeature(id) {
-        var layer = features[id];
-        if (layer) {
-            map.removeLayer(layer);
+        if (pendingRemovals) pendingRemovals[id] = true;
+        if (features[id]) {
+            removeFeatureLayers(id);
             delete features[id];
             console.log('Removed feature', id);
-        } else {
+        } else if (!pendingRemovals) {
             console.warn('Feature not found', id);
         }
     }
-    
+
     function removeFeaturesByTag(ids) {
         ids.forEach(function(id) {
-            var layer = features[id];
-            if (layer) {
-                map.removeLayer(layer);
+            if (pendingRemovals) pendingRemovals[id] = true;
+            if (features[id]) {
+                removeFeatureLayers(id);
                 delete features[id];
             }
         });
@@ -427,276 +532,38 @@
     }
 
     function clearAllFeatures() {
-        Object.keys(features).forEach(function(id) {
-            map.removeLayer(features[id]);
-        });
+        Object.keys(features).forEach(removeFeatureLayers);
         features = {};
         console.log('Cleared all features');
     }
-    
-    function setupHoverEffect(layer, originalStyle) {
-        layer.on('mouseover', function(e) {
-            // Add yellow border without magnifying
-            var style = {
-                color: '#FFD700',
-                weight: (originalStyle.originalWeight || 2) + 3
-            };
-            
-            // For points (circle markers), also change fill color to yellow
-            if (originalStyle.originalColor !== undefined) {
-                style.fillColor = '#FFD700';
-            }
-            
-            layer.setStyle(style);
-        });
-        
-        layer.on('mouseout', function(e) {
-            // Restore original style
-            var style = {
-                opacity: originalStyle.originalOpacity,
-                fillOpacity: originalStyle.originalOpacity
-            };
-            
-            if (originalStyle.originalWeight !== undefined) {
-                style.weight = originalStyle.originalWeight;
-            }
-            
-            if (originalStyle.originalColor !== undefined) {
-                style.color = originalStyle.originalColor;
-                style.fillColor = originalStyle.originalColor;
-            }
-            
-            layer.setStyle(style);
-        });
-    }
-    
-    function setupPolylineHoverEffect(line, markers, originalStyle) {
-        var applyHover = function() {
-            line.setStyle({
-                color: '#FFD700',
-                weight: (originalStyle.originalWeight || 2) + 3
-            });
-            
-            markers.forEach(function(marker) {
-                marker.setStyle({
-                    color: '#FFD700',
-                    fillColor: '#FFD700',
-                    weight: (originalStyle.originalMarkerWeight || 2) + 3
-                });
-            });
-        };
-        
-        var removeHover = function() {
-            line.setStyle({
-                opacity: originalStyle.originalOpacity,
-                color: originalStyle.originalColor,
-                weight: originalStyle.originalWeight
-            });
-            
-            markers.forEach(function(marker) {
-                marker.setStyle({
-                    opacity: originalStyle.originalOpacity,
-                    fillOpacity: originalStyle.originalOpacity,
-                    color: originalStyle.originalColor,
-                    fillColor: originalStyle.originalColor,
-                    weight: originalStyle.originalMarkerWeight
-                });
-            });
-        };
-        
-        // Apply hover to both line and markers
-        line.on('mouseover', applyHover);
-        line.on('mouseout', removeHover);
-        
-        markers.forEach(function(marker) {
-            marker.on('mouseover', applyHover);
-            marker.on('mouseout', removeHover);
-        });
-    }
-    
-    function setupSmartTooltip(layer, label, featureType, coords) {
-        if (featureType === 'polyline') {
-            // For polylines, calculate perpendicular direction dynamically
-            layer.on('mousemove', function(e) {
-                var mouseLatLng = e.latlng;
-                var closestSegment = findClosestSegment(coords, mouseLatLng);
-                var direction = getPerpendicularDirection(closestSegment);
-                
-                // Update tooltip with calculated direction
-                layer.unbindTooltip();
-                layer.bindTooltip(label, { 
-                    direction: direction,
-                    offset: getOffsetForDirection(direction, 10)
-                });
-                layer.openTooltip(mouseLatLng);
-            });
-        } else if (featureType === 'polygon') {
-            // For polygons, position tooltip away from centroid
-            layer.on('mousemove', function(e) {
-                var mouseLatLng = e.latlng;
-                var centroid = calculateCentroid(coords);
-                var direction = getDirectionAwayFromPoint(centroid, mouseLatLng);
-                
-                // Update tooltip with calculated direction
-                layer.unbindTooltip();
-                layer.bindTooltip(label, { 
-                    direction: direction,
-                    offset: getOffsetForDirection(direction, 10)
-                });
-                layer.openTooltip(mouseLatLng);
-            });
-        }
-    }
-    
-    function findClosestSegment(coords, point) {
-        var minDist = Infinity;
-        var closestSegment = null;
-        
-        for (var i = 0; i < coords.length - 1; i++) {
-            var p1 = coords[i];
-            var p2 = coords[i + 1];
-            var dist = pointToSegmentDistance(point, p1, p2);
-            
-            if (dist < minDist) {
-                minDist = dist;
-                closestSegment = { p1: p1, p2: p2 };
-            }
-        }
-        
-        return closestSegment;
-    }
-    
-    function pointToSegmentDistance(point, segStart, segEnd) {
-        var lat = point.lat;
-        var lng = point.lng;
-        var lat1 = segStart[0];
-        var lng1 = segStart[1];
-        var lat2 = segEnd[0];
-        var lng2 = segEnd[1];
-        
-        var A = lat - lat1;
-        var B = lng - lng1;
-        var C = lat2 - lat1;
-        var D = lng2 - lng1;
-        
-        var dot = A * C + B * D;
-        var lenSq = C * C + D * D;
-        var param = lenSq !== 0 ? dot / lenSq : -1;
-        
-        var xx, yy;
-        
-        if (param < 0) {
-            xx = lat1;
-            yy = lng1;
-        } else if (param > 1) {
-            xx = lat2;
-            yy = lng2;
-        } else {
-            xx = lat1 + param * C;
-            yy = lng1 + param * D;
-        }
-        
-        var dx = lat - xx;
-        var dy = lng - yy;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-    
-    function getPerpendicularDirection(segment) {
-        var lat1 = segment.p1[0];
-        var lng1 = segment.p1[1];
-        var lat2 = segment.p2[0];
-        var lng2 = segment.p2[1];
-        
-        var dLat = lat2 - lat1;
-        var dLng = lng2 - lng1;
-        
-        // Calculate angle of the line segment
-        var angle = Math.atan2(dLat, dLng) * 180 / Math.PI;
-        
-        // Normalize to 0-360
-        if (angle < 0) angle += 360;
-        
-        // Determine perpendicular direction (prefer upward/rightward)
-        if (angle >= 45 && angle < 135) {
-            return 'right'; // Line goes up, tooltip to the right
-        } else if (angle >= 135 && angle < 225) {
-            return 'top'; // Line goes left, tooltip above
-        } else if (angle >= 225 && angle < 315) {
-            return 'left'; // Line goes down, tooltip to the left
-        } else {
-            return 'top'; // Line goes right, tooltip above (not below)
-        }
-    }
-    
-    function calculateCentroid(coords) {
-        var latSum = 0, lngSum = 0;
-        coords.forEach(function(coord) {
-            latSum += coord[0];
-            lngSum += coord[1];
-        });
-        return {
-            lat: latSum / coords.length,
-            lng: lngSum / coords.length
-        };
-    }
-    
-    function getDirectionAwayFromPoint(fromPoint, toPoint) {
-        var dLat = toPoint.lat - fromPoint.lat;
-        var dLng = toPoint.lng - fromPoint.lng;
-        
-        // Determine primary direction
-        if (Math.abs(dLat) > Math.abs(dLng)) {
-            return dLat > 0 ? 'top' : 'bottom';
-        } else {
-            return dLng > 0 ? 'right' : 'left';
-        }
-    }
-    
-    function getOffsetForDirection(direction, distance) {
-        switch(direction) {
-            case 'top': return [0, -distance];
-            case 'bottom': return [0, distance];
-            case 'left': return [-distance, 0];
-            case 'right': return [distance, 0];
-            default: return [0, -distance];
-        }
-    }
-    
+
     function updateCurrentPosition(coords) {
-        // Remove old marker if exists
-        if (currentPositionMarker) {
-            map.removeLayer(currentPositionMarker);
-        }
-        
-        // Calculate heading (bearing) from previous position
+        // coords: [lat, lng]
+        var lat = coords[0], lng = coords[1];
         var rotation = 0;
         if (previousPosition) {
             var lat1 = previousPosition[0] * Math.PI / 180;
-            var lat2 = coords[0] * Math.PI / 180;
-            var dLon = (coords[1] - previousPosition[1]) * Math.PI / 180;
-            
+            var lat2 = lat * Math.PI / 180;
+            var dLon = (lng - previousPosition[1]) * Math.PI / 180;
             var y = Math.sin(dLon) * Math.cos(lat2);
             var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
             rotation = Math.atan2(y, x) * 180 / Math.PI;
         }
-        
-        // Create chevron icon (pointing upward, will be rotated)
-        var chevronIcon = L.divIcon({
-            className: 'current-position-icon',
-            html: '<div style="transform: rotate(' + rotation + 'deg); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 20px solid #4285F4; margin-left: -10px; margin-top: -10px;"></div>',
-            iconSize: [20, 20],
-            iconAnchor: [10, 10]
-        });
-        
-        // Add new marker
-        currentPositionMarker = L.marker(coords, { icon: chevronIcon }).addTo(map);
-        
-        // Follow position if enabled
-        if (followPosition) {
-            map.setView(coords, map.getZoom());
-        }
-        
-        // Store for next heading calculation
+        var el = document.createElement('div');
+        el.style.cssText = [
+            'width:0', 'height:0',
+            'border-left:10px solid transparent',
+            'border-right:10px solid transparent',
+            'border-bottom:20px solid #4285F4',
+            'transform:rotate(' + rotation + 'deg)'
+        ].join(';');
+
+        if (currentPositionMarker) currentPositionMarker.remove();
+        currentPositionMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([lng, lat])
+            .addTo(map);
+
+        if (followPosition) map.setCenter([lng, lat]);
         previousPosition = coords;
     }
     </script>

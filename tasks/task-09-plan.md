@@ -47,10 +47,10 @@ Map style is a **frontend concern only** — no changes to the Python backend.
 3. **README update**: add a "Map Style" section explaining the default OSM style, the style-change button, the `<api_key>` placeholder flow, and `localStorage` persistence.
 
 ## Files Changed
-| File | Change |
-|---|---|
-| `mapcat/static/index.html` | Full rewrite: Leaflet → MapLibre GL + style-change UI |
-| `README.md` | Add Map Style section |
+| File | Change | Status |
+|---|---|---|
+| `mapcat/static/index.html` | Full rewrite: Leaflet → MapLibre GL + style-change UI | ✅ Done |
+| `README.md` | Add Map Style section | ⬜ Pending |
 
 ## Notes
 - TomTom Orbis style URL (from map-playground): `https://api.tomtom.com/maps/orbis/assets/styles/0.0.*/style?key=<api_key>&map=basic_street-light-driving&hillshade=hillshade_light&navigationAndRoute=navigation_and_route_light&poi=poi_light&range=range_light&apiVersion=1&renderer=premium`
