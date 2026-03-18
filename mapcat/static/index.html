@@ -50,30 +50,35 @@
         #version-badge {
             position: absolute;
             bottom: 10px;
-            right: 10px;
+            left: 10px;
             z-index: 1000;
-            background: white;
-            padding: 6px 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            padding: 8px 14px;
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #333;
+            gap: 10px;
+            font-size: 16px;
+            color: white;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.25);
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
             user-select: none;
             pointer-events: none;
         }
         #version-badge .logo {
-            width: 20px;
-            height: 20px;
+            width: 32px;
+            height: 32px;
             flex-shrink: 0;
         }
         #version-badge .brand {
-            font-weight: bold;
+            font-weight: 700;
         }
         #version-badge .ver {
-            color: #666;
+            color: white;
+            font-weight: 400;
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -92,9 +97,9 @@
                     <circle cx="50" cy="52" r="12" fill="white"/>
                 </mask>
             </defs>
-            <circle cx="50" cy="50" r="48" fill="#007cff" mask="url(#version-logo-mask)"/>
+            <circle cx="50" cy="50" r="48" fill="white" mask="url(#version-logo-mask)"/>
         </svg>
-        <span class="brand">TomTom|MapCat</span>
+        <span class="brand">MapCat</span>
         <span class="ver">__VERSION__</span>
     </div>
     <div id="map"></div>
