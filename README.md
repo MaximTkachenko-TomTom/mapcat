@@ -71,6 +71,35 @@ After installation, the `mapcat` command is available from any directory.
 **Requirements:**
 - Python 3.11+
 
+## Development
+
+### Dev dependencies
+
+Install dev dependencies (includes `pytest`, `playwright`, `pytest-playwright`):
+
+```bash
+pip install -r requirements-dev.txt
+playwright install chromium   # one-time browser download
+```
+
+### Running tests
+
+```bash
+# All tests
+python -m pytest
+
+# Unit tests only (parser, commands, state)
+python -m pytest tests/test_parser.py tests/test_commands.py tests/test_state.py
+
+# Frontend tests only (Playwright, headless Chromium)
+python -m pytest tests/test_frontend.py -v
+```
+
+Frontend tests serve the real `index.html` and drive it via `page.evaluate()`, intercepting
+the MapLibre GL CDN bundle with a lightweight spy mock. They verify that WebSocket messages
+produce the correct map API calls (`addSource`, `addLayer`, `fitBounds`, etc.) and JS state
+updates (`features`, `autofocus`, `currentPositionMarker`, …).
+
 ## Command Reference
 
 Run `help` in REPL mode to see detailed documentation for all commands.
