@@ -276,11 +276,23 @@
     };
 
     function resolveInitialStyle() {
-        var savedUrl = localStorage.getItem('mapcat_style_url');
-        var savedKey = localStorage.getItem('mapcat_api_key');
-        if (savedUrl) {
-            return savedKey ? savedUrl.replace('<api_key>', savedKey) : savedUrl;
+        var active = localStorage.getItem('mapcat_active_style') || 'default';
+        var key    = localStorage.getItem('mapcat_api_key') || '';
+
+        if (active === 'default') return DEFAULT_STYLE;
+
+        var DRIVING_LIGHT_URL = 'https://api.tomtom.com/maps/orbis/assets/styles/0.0.*/style?key=<api_key>&map=basic_street-light-driving&hillshade=hillshade_light&navigationAndRoute=navigation_and_route_light&poi=poi_light&range=range_light&apiVersion=1&renderer=premium';
+        if (active === 'driving-light') {
+            return key ? DRIVING_LIGHT_URL.replace('<api_key>', key) : DEFAULT_STYLE;
         }
+
+        if (active.indexOf('custom:') === 0) {
+            var cid = parseInt(active.slice(7), 10);
+            var customs = JSON.parse(localStorage.getItem('mapcat_custom_styles') || '[]');
+            var found = customs.find(function(s) { return s.id === cid; });
+            if (found) return key ? found.url.replace('<api_key>', key) : found.url;
+        }
+
         return DEFAULT_STYLE;
     }
 
@@ -360,33 +372,92 @@
 
     var PREDEFINED_STYLES = {
         'default': null,  // null = use DEFAULT_STYLE object
-        'driving-light': null  // placeholder — URL to be filled in later
+        'driving-light': 'https://api.tomtom.com/maps/orbis/assets/styles/0.0.*/style?key=<api_key>&map=basic_street-light-driving&hillshade=hillshade_light&navigationAndRoute=navigation_and_route_light&poi=poi_light&range=range_light&apiVersion=1&renderer=premium'
     };
 
-    var settingsPanel     = document.getElementById('settingsPanel');
-    var customStyleForm   = document.getElementById('customStyleForm');
-    var styleUrlInput     = document.getElementById('styleUrlInput');
-    var apiKeyInlineInput = document.getElementById('apiKeyInlineInput');
+    var settingsPanel       = document.getElementById('settingsPanel');
+    var customStyleForm     = document.getElementById('customStyleForm');
+    var styleUrlInput       = document.getElementById('styleUrlInput');
+    var apiKeyInlineInput   = document.getElementById('apiKeyInlineInput');
     var apiKeyInlineSection = document.getElementById('apiKeyInlineSection');
-    var apiKeyForm        = document.getElementById('apiKeyForm');
-    var apiKeyInput       = document.getElementById('apiKeyInput');
+    var apiKeyForm          = document.getElementById('apiKeyForm');
+    var apiKeyInput         = document.getElementById('apiKeyInput');
 
-    // Restore saved values
-    styleUrlInput.value = localStorage.getItem('mapcat_style_url') || '';
-    apiKeyInput.value   = localStorage.getItem('mapcat_api_key')   || '';
-    apiKeyInlineInput.value = localStorage.getItem('mapcat_api_key') || '';
+    // pendingStyle is set when the API key prompt is triggered mid-selection;
+    // { url, activeStyleId } — applied after the key is saved.
+    var pendingStyle = null;
+
+    // ── Storage helpers ───────────────────────────────────────────────────────
+
+    function getCustomStyles() {
+        return JSON.parse(localStorage.getItem('mapcat_custom_styles') || '[]');
+    }
+
+    function saveCustomStyles(styles) {
+        localStorage.setItem('mapcat_custom_styles', JSON.stringify(styles));
+    }
+
+    function getActiveStyleId() {
+        return localStorage.getItem('mapcat_active_style') || 'default';
+    }
+
+    function setActiveStyleId(id) {
+        localStorage.setItem('mapcat_active_style', id);
+    }
+
+    /** Return the resolved style (object or URL string) for the given activeStyleId. */
+    function resolveStyleById(id) {
+        var key = localStorage.getItem('mapcat_api_key') || '';
+        if (id === 'default') return DEFAULT_STYLE;
+        if (PREDEFINED_STYLES[id]) {
+            var url = PREDEFINED_STYLES[id];
+            return key ? url.replace('<api_key>', key) : url;
+        }
+        if (id.indexOf('custom:') === 0) {
+            var cid = parseInt(id.slice(7), 10);
+            var found = getCustomStyles().find(function(s) { return s.id === cid; });
+            if (found) return key ? found.url.replace('<api_key>', key) : found.url;
+        }
+        return DEFAULT_STYLE;
+    }
+
+    /** True if this style URL requires an API key and none is saved yet. */
+    function needsApiKeyPrompt(url) {
+        return url && url.indexOf('<api_key>') !== -1 &&
+               !localStorage.getItem('mapcat_api_key');
+    }
+
+    // ── Active style indicator ────────────────────────────────────────────────
 
     function updateActiveStyle() {
-        var savedUrl = localStorage.getItem('mapcat_style_url');
+        var active = getActiveStyleId();
         document.querySelectorAll('#styleList li').forEach(function(li) {
-            li.classList.remove('active');
+            li.classList.toggle('active', li.dataset.style === active);
         });
-        if (!savedUrl) {
-            var defaultLi = document.querySelector('#styleList li[data-style="default"]');
-            if (defaultLi) defaultLi.classList.add('active');
-        }
     }
+
+    // ── Load persisted custom styles into DOM ─────────────────────────────────
+
+    function loadCustomStyles() {
+        var styleList = document.getElementById('styleList');
+        getCustomStyles().forEach(function(s, idx) {
+            styleList.appendChild(makeCustomStyleLi(s.id, s.url, idx + 1));
+        });
+    }
+
+    function makeCustomStyleLi(id, url, displayNumber) {
+        var li = document.createElement('li');
+        li.dataset.style = 'custom:' + id;
+        li.title = url;
+        li.innerHTML = '<span class="style-dot"></span> Custom ' + displayNumber;
+        return li;
+    }
+
+    loadCustomStyles();
+    apiKeyInput.value = localStorage.getItem('mapcat_api_key') || '';
     updateActiveStyle();
+
+    // ── Panel open / close ────────────────────────────────────────────────────
 
     document.getElementById('settingsBtn').addEventListener('click', function() {
         var isOpen = settingsPanel.classList.contains('open');
@@ -398,7 +469,6 @@
         settingsPanel.classList.toggle('open');
     });
 
-    // Close settings when clicking outside both panels
     document.addEventListener('click', function(e) {
         if (!settingsPanel.contains(e.target) &&
             !document.getElementById('settingsBtn').contains(e.target)) {
@@ -408,32 +478,51 @@
         }
     });
 
-    // Predefined style list clicks
+    // ── Style list clicks ─────────────────────────────────────────────────────
+
     document.getElementById('styleList').addEventListener('click', function(e) {
         var li = e.target.closest('li');
         if (!li) return;
-        var styleName = li.dataset.style;
-        document.querySelectorAll('#styleList li').forEach(function(el) { el.classList.remove('active'); });
-        li.classList.add('active');
+        var styleId = li.dataset.style;
 
-        if (styleName === 'default') {
-            localStorage.removeItem('mapcat_style_url');
-            localStorage.removeItem('mapcat_api_key');
+        if (styleId === 'default') {
+            setActiveStyleId('default');
+            updateActiveStyle();
             map.setStyle(DEFAULT_STYLE);
-        } else if (PREDEFINED_STYLES[styleName]) {
-            var url = PREDEFINED_STYLES[styleName];
-            var key = localStorage.getItem('mapcat_api_key') || '';
-            var resolved = key ? url.replace('<api_key>', key) : url;
-            localStorage.setItem('mapcat_style_url', url);
-            map.setStyle(resolved);
+            return;
         }
-        // else: placeholder style — no-op
+
+        var url = null;
+        if (PREDEFINED_STYLES[styleId] !== undefined) {
+            url = PREDEFINED_STYLES[styleId];
+        } else if (styleId.indexOf('custom:') === 0) {
+            var cid = parseInt(styleId.slice(7), 10);
+            var found = getCustomStyles().find(function(s) { return s.id === cid; });
+            if (found) url = found.url;
+        }
+        if (!url) return;
+
+        if (needsApiKeyPrompt(url)) {
+            pendingStyle = { url: url, activeStyleId: styleId };
+            apiKeyInput.value = '';
+            apiKeyForm.style.display = 'block';
+            customStyleForm.style.display = 'none';
+            return;
+        }
+
+        setActiveStyleId(styleId);
+        updateActiveStyle();
+        map.setStyle(resolveStyleById(styleId));
     });
 
-    // Add custom style form
+    // ── Add custom style form ─────────────────────────────────────────────────
+
     document.getElementById('addCustomStyleBtn').addEventListener('click', function() {
         customStyleForm.style.display = customStyleForm.style.display === 'none' ? 'block' : 'none';
         apiKeyForm.style.display = 'none';
+        styleUrlInput.value = '';
+        apiKeyInlineInput.value = localStorage.getItem('mapcat_api_key') || '';
+        apiKeyInlineSection.style.display = 'none';
     });
 
     styleUrlInput.addEventListener('input', function() {
@@ -444,44 +533,97 @@
     document.getElementById('applyCustomStyleBtn').addEventListener('click', function() {
         var url = styleUrlInput.value.trim();
         if (!url) return;
-        var key = apiKeyInlineInput.value.trim() || localStorage.getItem('mapcat_api_key') || '';
-        var resolved = key ? url.replace('<api_key>', key) : url;
-        localStorage.setItem('mapcat_style_url', url);
+
+        var inlineKey = apiKeyInlineInput.value.trim();
+        var key = inlineKey || localStorage.getItem('mapcat_api_key') || '';
+
+        var customs = getCustomStyles();
+        var nextId = customs.reduce(function(max, s) { return Math.max(max, s.id); }, 0) + 1;
+        customs.push({ id: nextId, url: url });
+        saveCustomStyles(customs);
         if (key) localStorage.setItem('mapcat_api_key', key);
-        else localStorage.removeItem('mapcat_api_key');
+
+        var styleId = 'custom:' + nextId;
+        var li = makeCustomStyleLi(nextId, url, customs.length);
+        document.getElementById('styleList').appendChild(li);
+
+        setActiveStyleId(styleId);
+        updateActiveStyle();
+        var resolved = key ? url.replace('<api_key>', key) : url;
         map.setStyle(resolved);
+
         customStyleForm.style.display = 'none';
-        document.querySelectorAll('#styleList li').forEach(function(li) { li.classList.remove('active'); });
     });
 
     document.getElementById('cancelCustomStyleBtn').addEventListener('click', function() {
-        styleUrlInput.value = localStorage.getItem('mapcat_style_url') || '';
+        styleUrlInput.value = '';
         apiKeyInlineInput.value = localStorage.getItem('mapcat_api_key') || '';
         apiKeyInlineSection.style.display = 'none';
         customStyleForm.style.display = 'none';
     });
 
-    // API key form
+    // ── API key form ──────────────────────────────────────────────────────────
+
+    var apiKeyInputMasked = false;
+
+    function maskKey(key) {
+        if (key.length <= 6) return key;
+        return key.slice(0, 3) + '***' + key.slice(-3);
+    }
+
+    // When user starts typing, unmask so their input is shown as-is
+    apiKeyInput.addEventListener('input', function() {
+        apiKeyInputMasked = false;
+    });
+
     document.getElementById('changeApiKeyBtn').addEventListener('click', function() {
         apiKeyForm.style.display = apiKeyForm.style.display === 'none' ? 'block' : 'none';
         customStyleForm.style.display = 'none';
-        apiKeyInput.value = localStorage.getItem('mapcat_api_key') || '';
+        var saved = localStorage.getItem('mapcat_api_key') || '';
+        if (saved) {
+            apiKeyInput.value = maskKey(saved);
+            apiKeyInputMasked = true;
+        } else {
+            apiKeyInput.value = '';
+            apiKeyInputMasked = false;
+        }
     });
 
     document.getElementById('saveApiKeyBtn').addEventListener('click', function() {
-        var key = apiKeyInput.value.trim();
+        // If the field still shows the mask, the user didn't change the key
+        var key = apiKeyInputMasked
+            ? localStorage.getItem('mapcat_api_key') || ''
+            : apiKeyInput.value.trim();
+        apiKeyInputMasked = false;
+
         if (key) localStorage.setItem('mapcat_api_key', key);
         else localStorage.removeItem('mapcat_api_key');
-        // Re-apply current style with new key
-        var savedUrl = localStorage.getItem('mapcat_style_url');
-        if (savedUrl) {
-            var resolved = key ? savedUrl.replace('<api_key>', key) : savedUrl;
-            map.setStyle(resolved);
-        }
         apiKeyForm.style.display = 'none';
+
+        if (pendingStyle) {
+            // Apply the style that was waiting for a key
+            var ps = pendingStyle;
+            pendingStyle = null;
+            if (key) {
+                setActiveStyleId(ps.activeStyleId);
+                updateActiveStyle();
+                map.setStyle(ps.url.replace('<api_key>', key));
+            } else {
+                // No key entered — stay on current style
+            }
+            return;
+        }
+
+        // Re-apply current style with updated key
+        var active = getActiveStyleId();
+        if (active !== 'default') {
+            map.setStyle(resolveStyleById(active));
+        }
     });
 
     document.getElementById('cancelApiKeyBtn').addEventListener('click', function() {
+        pendingStyle = null;
+        apiKeyInputMasked = false;
         apiKeyForm.style.display = 'none';
     });
 
