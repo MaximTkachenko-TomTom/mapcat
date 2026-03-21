@@ -9,122 +9,250 @@
     <style>
         body { margin: 0; padding: 0; }
         #map { width: 100vw; height: 100vh; }
-        #controls {
+        /* ── Toolbox ─────────────────────────────────────────────────────────── */
+        #toolbox {
             position: absolute;
             top: 10px;
-            right: 10px;
+            left: 10px;
             z-index: 1000;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            min-width: 175px;
+            background: #2a2d2e;
+            border: 1px solid #404445;
+            border-radius: 10px;
+            padding: 10px 12px;
+            min-width: 170px;
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #eee;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            user-select: none;
         }
-        #controls button {
-            display: block;
+        .toolbox-logo-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 2px 0 6px;
+        }
+        .toolbox-logo-row svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .toolbox-brand { color: #fff; font-weight: 700; font-size: 13px; }
+        .toolbox-ver { color: rgba(255,255,255,0.3); font-size: 11px; margin-left: auto; }
+        #toolbox hr { border: none; border-top: 1px solid #404445; margin: 6px 0; }
+        .toolbox-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             width: 100%;
-            margin: 4px 0;
-            padding: 8px 12px;
-            background: #007cff;
-            color: white;
+            padding: 5px 4px;
+            background: none;
             border: none;
-            border-radius: 3px;
             cursor: pointer;
-            font-size: 14px;
+            color: rgba(255,255,255,0.65);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
             text-align: left;
+            transition: background 0.1s, color 0.1s;
             box-sizing: border-box;
         }
-        #controls button:hover { background: #0056b3; }
-        #controls button.active { background: #28a745; }
-        #controls button.active:hover { background: #1e7e34; }
-        #controls button.clear { background: #dc3545; }
-        #controls button.clear:hover { background: #c82333; }
-        #controls button.toggle { background: #6c757d; }
-        #controls button.toggle:hover { background: #545b62; }
-        #controls button.reset {
-            background: transparent;
-            color: #007cff;
-            border: 1px solid #007cff;
-            margin-top: 4px;
+        .toolbox-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .toolbox-btn .dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            flex-shrink: 0;
         }
-        #controls button.reset:hover { background: #007cff; color: white; }
-        #controls hr { border: none; border-top: 1px solid #ddd; margin: 6px 0; }
-        #mapStylePanel { margin-top: 4px; }
-        #mapStylePanel input[type="text"] {
+        .toolbox-btn.on .dot { background: #4ec94e; box-shadow: 0 0 6px #4ec94e; }
+        .toolbox-btn.danger { color: rgba(255,120,120,0.85); }
+        .toolbox-btn.danger:hover { background: rgba(255,80,80,0.1); color: #ff9090; }
+        .toolbox-btn.settings { color: rgba(255,255,255,0.4); }
+        .toolbox-btn.settings:hover { color: #fff; background: rgba(255,255,255,0.07); }
+
+        /* ── Settings panel ──────────────────────────────────────────────────── */
+        #settingsPanel {
+            display: none;
+            position: absolute;
+            z-index: 999;
+            background: #2a2d2e;
+            border: 1px solid #404445;
+            border-radius: 10px;
+            padding: 12px 14px;
+            min-width: 220px;
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #eee;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        #settingsPanel.open { display: block; }
+        .settings-section-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 6px;
+        }
+        .style-list { list-style: none; margin: 0 0 8px; padding: 0; }
+        .style-list li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: rgba(255,255,255,0.65);
+            transition: background 0.1s, color 0.1s;
+        }
+        .style-list li:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .style-list li .style-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            flex-shrink: 0;
+        }
+        .style-list li.active { color: #fff; }
+        .style-list li.active .style-dot { background: #4ec94e; box-shadow: 0 0 6px #4ec94e; }
+        #settingsPanel hr { border: none; border-top: 1px solid #404445; margin: 8px 0; }
+        .settings-action-btn {
+            display: block;
+            width: 100%;
+            padding: 5px 4px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: rgba(255,255,255,0.4);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
+            text-align: left;
+            transition: background 0.1s, color 0.1s;
+            box-sizing: border-box;
+            margin-bottom: 2px;
+        }
+        .settings-action-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+
+        /* Custom style form */
+        #customStyleForm { display: none; margin-top: 8px; }
+        #customStyleForm input[type="text"] {
             display: block;
             width: 100%;
             box-sizing: border-box;
             padding: 6px 8px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            font-size: 13px;
+            background: #1e2122;
+            border: 1px solid #404445;
+            border-radius: 4px;
+            color: #eee;
+            font-size: 12px;
+            font-family: inherit;
             margin-bottom: 4px;
+            outline: none;
         }
-        #mapStylePanel input[type="text"]:focus { border-color: #007cff; outline: none; }
-        .style-actions { display: flex; gap: 4px; }
-        .style-actions button { flex: 1; margin: 0; }
-        .style-actions .apply { background: #007cff; }
-        .style-actions .apply:hover { background: #0056b3; }
-        .style-actions .cancel { background: #6c757d; }
-        .style-actions .cancel:hover { background: #545b62; }
-        #version-badge {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 1000;
-            padding: 8px 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 16px;
-            color: white;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.25);
-            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-            user-select: none;
-            pointer-events: none;
+        #customStyleForm input[type="text"]:focus { border-color: #7aa2f7; }
+        #customStyleForm input[type="text"]::placeholder { color: rgba(255,255,255,0.2); }
+        .custom-form-actions { display: flex; gap: 6px; }
+        .custom-form-actions button {
+            flex: 1;
+            padding: 5px 0;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
         }
-        #version-badge .logo { width: 32px; height: 32px; flex-shrink: 0; }
-        #version-badge .brand { font-weight: 700; }
-        #version-badge .ver { color: white; font-weight: 400; text-transform: uppercase; }
+        .custom-form-actions .apply { background: #7aa2f7; color: #1e2122; font-weight: 600; }
+        .custom-form-actions .apply:hover { background: #adc8ff; }
+        .custom-form-actions .cancel-form { background: rgba(255,255,255,0.08); color: #eee; }
+        .custom-form-actions .cancel-form:hover { background: rgba(255,255,255,0.14); }
+
+        /* API key form */
+        #apiKeyForm { display: none; margin-top: 8px; }
+        #apiKeyForm input[type="text"] {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px 8px;
+            background: #1e2122;
+            border: 1px solid #404445;
+            border-radius: 4px;
+            color: #eee;
+            font-size: 12px;
+            font-family: inherit;
+            margin-bottom: 4px;
+            outline: none;
+        }
+        #apiKeyForm input[type="text"]:focus { border-color: #7aa2f7; }
+        #apiKeyForm input[type="text"]::placeholder { color: rgba(255,255,255,0.2); }
+        .api-key-actions { display: flex; gap: 6px; }
+        .api-key-actions button {
+            flex: 1;
+            padding: 5px 0;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .api-key-actions .save { background: #7aa2f7; color: #1e2122; font-weight: 600; }
+        .api-key-actions .save:hover { background: #adc8ff; }
+        .api-key-actions .cancel-key { background: rgba(255,255,255,0.08); color: #eee; }
+        .api-key-actions .cancel-key:hover { background: rgba(255,255,255,0.14); }
     </style>
 </head>
 <body>
-    <div id="controls">
-        <button id="autofocusBtn" class="active">Auto-focus: ON</button>
-        <button id="followPositionBtn">Follow Position: OFF</button>
-        <hr>
-        <button id="clearBtn" class="clear">Clear</button>
-        <hr>
-        <button id="mapStyleToggle" class="toggle">&#9658; Map style</button>
-        <div id="mapStylePanel" style="display:none">
-            <input type="text" id="styleUrlInput" placeholder="Style URL..."/>
-            <div id="apiKeySection" style="display:none">
-                <input type="text" id="apiKeyInput" placeholder="API key..."/>
-            </div>
-            <div class="style-actions">
-                <button class="apply" id="applyStyleBtn">Apply</button>
-                <button class="cancel" id="cancelStyleBtn">Cancel</button>
-            </div>
-            <button class="reset" id="resetStyleBtn">Reset to default</button>
+    <!-- Toolbox -->
+    <div id="toolbox">
+        <div class="toolbox-logo-row">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <mask id="toolbox-logo-mask">
+                        <rect width="100" height="100" fill="white"/>
+                        <path fill="black" d="M50 90 L18 52 L30 16 L50 30 L70 16 L82 52 Z"/>
+                        <circle cx="50" cy="52" r="12" fill="white"/>
+                    </mask>
+                </defs>
+                <circle cx="50" cy="50" r="48" fill="white" mask="url(#toolbox-logo-mask)"/>
+            </svg>
+            <span class="toolbox-brand">MapCat</span>
+            <span class="toolbox-ver">__VERSION__</span>
         </div>
+        <hr>
+        <button id="autofocusBtn" class="toolbox-btn on">
+            Auto-focus <span class="dot"></span>
+        </button>
+        <button id="followPositionBtn" class="toolbox-btn">
+            Follow <span class="dot"></span>
+        </button>
+        <button id="clearBtn" class="toolbox-btn danger">Clear</button>
+        <hr>
+        <button id="settingsBtn" class="toolbox-btn settings">Settings…</button>
     </div>
-    <div id="version-badge">
-        <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <mask id="version-logo-mask">
-                    <rect width="100" height="100" fill="white"/>
-                    <path fill="black" d="M50 90 L18 52 L30 16 L50 30 L70 16 L82 52 Z"/>
-                    <circle cx="50" cy="52" r="12" fill="white"/>
-                </mask>
-            </defs>
-            <circle cx="50" cy="50" r="48" fill="white" mask="url(#version-logo-mask)"/>
-        </svg>
-        <span class="brand">MapCat</span>
-        <span class="ver">__VERSION__</span>
+
+    <!-- Settings panel -->
+    <div id="settingsPanel">
+        <div class="settings-section-label">Map style</div>
+        <ul class="style-list" id="styleList">
+            <li data-style="default" class="active">
+                <span class="style-dot"></span> OSM Default
+            </li>
+            <li data-style="driving-light">
+                <span class="style-dot"></span> Driving light
+            </li>
+        </ul>
+        <button class="settings-action-btn" id="addCustomStyleBtn">+ Add custom style…</button>
+        <div id="customStyleForm">
+            <input type="text" id="styleUrlInput" placeholder="Style URL (use &lt;api_key&gt; as placeholder)"/>
+            <div id="apiKeyInlineSection" style="display:none">
+                <input type="text" id="apiKeyInlineInput" placeholder="API key…"/>
+            </div>
+            <div class="custom-form-actions">
+                <button class="apply" id="applyCustomStyleBtn">Apply</button>
+                <button class="cancel-form" id="cancelCustomStyleBtn">Cancel</button>
+            </div>
+        </div>
+        <hr>
+        <button class="settings-action-btn" id="changeApiKeyBtn">🔑 Change API key…</button>
+        <div id="apiKeyForm">
+            <input type="text" id="apiKeyInput" placeholder="API key…"/>
+            <div class="api-key-actions">
+                <button class="save" id="saveApiKeyBtn">Save</button>
+                <button class="cancel-key" id="cancelApiKeyBtn">Cancel</button>
+            </div>
+        </div>
     </div>
     <div id="map"></div>
     <script src="https://unpkg.com/maplibre-gl@5.16.0/dist/maplibre-gl.js"></script>
@@ -194,18 +322,17 @@
 
     // ── Control panel ──────────────────────────────────────────────────────────
 
-    var autofocusBtn = document.getElementById('autofocusBtn');
+    var autofocusBtn      = document.getElementById('autofocusBtn');
+    var followPositionBtn = document.getElementById('followPositionBtn');
+
     autofocusBtn.addEventListener('click', function() {
         autofocus = !autofocus;
-        autofocusBtn.textContent = autofocus ? 'Auto-focus: ON' : 'Auto-focus: OFF';
-        autofocusBtn.className = autofocus ? 'active' : '';
+        autofocusBtn.classList.toggle('on', autofocus);
     });
 
-    var followPositionBtn = document.getElementById('followPositionBtn');
     followPositionBtn.addEventListener('click', function() {
         followPosition = !followPosition;
-        followPositionBtn.textContent = followPosition ? 'Follow Position: ON' : 'Follow Position: OFF';
-        followPositionBtn.className = followPosition ? 'active' : '';
+        followPositionBtn.classList.toggle('on', followPosition);
     });
 
     document.getElementById('clearBtn').addEventListener('click', function() {
@@ -221,76 +348,141 @@
     map.on('dragstart', function() {
         if (autofocus) {
             autofocus = false;
-            autofocusBtn.textContent = 'Auto-focus: OFF';
-            autofocusBtn.className = '';
+            autofocusBtn.classList.remove('on');
         }
         if (followPosition) {
             followPosition = false;
-            followPositionBtn.textContent = 'Follow Position: OFF';
-            followPositionBtn.className = '';
+            followPositionBtn.classList.remove('on');
         }
     });
 
-    // ── Map style sub-panel ────────────────────────────────────────────────────
+    // ── Settings panel ─────────────────────────────────────────────────────────
 
-    var mapStyleToggle = document.getElementById('mapStyleToggle');
-    var mapStylePanel  = document.getElementById('mapStylePanel');
-    var styleUrlInput  = document.getElementById('styleUrlInput');
-    var apiKeyInput    = document.getElementById('apiKeyInput');
-    var apiKeySection  = document.getElementById('apiKeySection');
+    var PREDEFINED_STYLES = {
+        'default': null,  // null = use DEFAULT_STYLE object
+        'driving-light': null  // placeholder — URL to be filled in later
+    };
 
-    // Restore saved values into inputs on load
+    var settingsPanel     = document.getElementById('settingsPanel');
+    var customStyleForm   = document.getElementById('customStyleForm');
+    var styleUrlInput     = document.getElementById('styleUrlInput');
+    var apiKeyInlineInput = document.getElementById('apiKeyInlineInput');
+    var apiKeyInlineSection = document.getElementById('apiKeyInlineSection');
+    var apiKeyForm        = document.getElementById('apiKeyForm');
+    var apiKeyInput       = document.getElementById('apiKeyInput');
+
+    // Restore saved values
     styleUrlInput.value = localStorage.getItem('mapcat_style_url') || '';
     apiKeyInput.value   = localStorage.getItem('mapcat_api_key')   || '';
-    if (styleUrlInput.value.indexOf('<api_key>') !== -1) {
-        apiKeySection.style.display = 'block';
-    }
+    apiKeyInlineInput.value = localStorage.getItem('mapcat_api_key') || '';
 
-    mapStyleToggle.addEventListener('click', function() {
-        var open = mapStylePanel.style.display !== 'none';
-        mapStylePanel.style.display = open ? 'none' : 'block';
-        mapStyleToggle.innerHTML = (open ? '&#9658;' : '&#9660;') + ' Map style';
+    function updateActiveStyle() {
+        var savedUrl = localStorage.getItem('mapcat_style_url');
+        document.querySelectorAll('#styleList li').forEach(function(li) {
+            li.classList.remove('active');
+        });
+        if (!savedUrl) {
+            var defaultLi = document.querySelector('#styleList li[data-style="default"]');
+            if (defaultLi) defaultLi.classList.add('active');
+        }
+    }
+    updateActiveStyle();
+
+    document.getElementById('settingsBtn').addEventListener('click', function() {
+        var isOpen = settingsPanel.classList.contains('open');
+        if (!isOpen) {
+            var rect = document.getElementById('toolbox').getBoundingClientRect();
+            settingsPanel.style.left = (rect.right + 8) + 'px';
+            settingsPanel.style.top  = rect.top + 'px';
+        }
+        settingsPanel.classList.toggle('open');
+    });
+
+    // Close settings when clicking outside both panels
+    document.addEventListener('click', function(e) {
+        if (!settingsPanel.contains(e.target) &&
+            !document.getElementById('settingsBtn').contains(e.target)) {
+            settingsPanel.classList.remove('open');
+            customStyleForm.style.display = 'none';
+            apiKeyForm.style.display = 'none';
+        }
+    });
+
+    // Predefined style list clicks
+    document.getElementById('styleList').addEventListener('click', function(e) {
+        var li = e.target.closest('li');
+        if (!li) return;
+        var styleName = li.dataset.style;
+        document.querySelectorAll('#styleList li').forEach(function(el) { el.classList.remove('active'); });
+        li.classList.add('active');
+
+        if (styleName === 'default') {
+            localStorage.removeItem('mapcat_style_url');
+            localStorage.removeItem('mapcat_api_key');
+            map.setStyle(DEFAULT_STYLE);
+        } else if (PREDEFINED_STYLES[styleName]) {
+            var url = PREDEFINED_STYLES[styleName];
+            var key = localStorage.getItem('mapcat_api_key') || '';
+            var resolved = key ? url.replace('<api_key>', key) : url;
+            localStorage.setItem('mapcat_style_url', url);
+            map.setStyle(resolved);
+        }
+        // else: placeholder style — no-op
+    });
+
+    // Add custom style form
+    document.getElementById('addCustomStyleBtn').addEventListener('click', function() {
+        customStyleForm.style.display = customStyleForm.style.display === 'none' ? 'block' : 'none';
+        apiKeyForm.style.display = 'none';
     });
 
     styleUrlInput.addEventListener('input', function() {
-        apiKeySection.style.display =
+        apiKeyInlineSection.style.display =
             styleUrlInput.value.indexOf('<api_key>') !== -1 ? 'block' : 'none';
     });
 
-    document.getElementById('applyStyleBtn').addEventListener('click', function() {
+    document.getElementById('applyCustomStyleBtn').addEventListener('click', function() {
         var url = styleUrlInput.value.trim();
         if (!url) return;
-        var key = apiKeyInput.value.trim();
+        var key = apiKeyInlineInput.value.trim() || localStorage.getItem('mapcat_api_key') || '';
         var resolved = key ? url.replace('<api_key>', key) : url;
         localStorage.setItem('mapcat_style_url', url);
-        if (key) {
-            localStorage.setItem('mapcat_api_key', key);
-        } else {
-            localStorage.removeItem('mapcat_api_key');
-        }
+        if (key) localStorage.setItem('mapcat_api_key', key);
+        else localStorage.removeItem('mapcat_api_key');
         map.setStyle(resolved);
-        mapStylePanel.style.display = 'none';
-        mapStyleToggle.innerHTML = '&#9658; Map style';
+        customStyleForm.style.display = 'none';
+        document.querySelectorAll('#styleList li').forEach(function(li) { li.classList.remove('active'); });
     });
 
-    document.getElementById('cancelStyleBtn').addEventListener('click', function() {
+    document.getElementById('cancelCustomStyleBtn').addEventListener('click', function() {
         styleUrlInput.value = localStorage.getItem('mapcat_style_url') || '';
-        apiKeyInput.value   = localStorage.getItem('mapcat_api_key')   || '';
-        apiKeySection.style.display =
-            styleUrlInput.value.indexOf('<api_key>') !== -1 ? 'block' : 'none';
-        mapStylePanel.style.display = 'none';
-        mapStyleToggle.innerHTML = '&#9658; Map style';
+        apiKeyInlineInput.value = localStorage.getItem('mapcat_api_key') || '';
+        apiKeyInlineSection.style.display = 'none';
+        customStyleForm.style.display = 'none';
     });
 
-    document.getElementById('resetStyleBtn').addEventListener('click', function() {
-        localStorage.removeItem('mapcat_style_url');
-        localStorage.removeItem('mapcat_api_key');
-        styleUrlInput.value = '';
-        apiKeyInput.value   = '';
-        apiKeySection.style.display = 'none';
-        map.setStyle(DEFAULT_STYLE);
-        mapStylePanel.style.display = 'none';
-        mapStyleToggle.innerHTML = '&#9658; Map style';
+    // API key form
+    document.getElementById('changeApiKeyBtn').addEventListener('click', function() {
+        apiKeyForm.style.display = apiKeyForm.style.display === 'none' ? 'block' : 'none';
+        customStyleForm.style.display = 'none';
+        apiKeyInput.value = localStorage.getItem('mapcat_api_key') || '';
+    });
+
+    document.getElementById('saveApiKeyBtn').addEventListener('click', function() {
+        var key = apiKeyInput.value.trim();
+        if (key) localStorage.setItem('mapcat_api_key', key);
+        else localStorage.removeItem('mapcat_api_key');
+        // Re-apply current style with new key
+        var savedUrl = localStorage.getItem('mapcat_style_url');
+        if (savedUrl) {
+            var resolved = key ? savedUrl.replace('<api_key>', key) : savedUrl;
+            map.setStyle(resolved);
+        }
+        apiKeyForm.style.display = 'none';
+    });
+
+    document.getElementById('cancelApiKeyBtn').addEventListener('click', function() {
+        apiKeyForm.style.display = 'none';
     });
 
     // ── WebSocket ──────────────────────────────────────────────────────────────
