@@ -312,6 +312,22 @@ clear
 help
   Show this help message
 
+begin id=<id>
+  Open a chunked session for assembling a long command split across multiple log lines
+  Use when a command is too long for a single log line (e.g. Android Log.d limit ~4000 chars)
+
+<id> <content> seq=<N>
+  Add a chunk to an open session. seq must start at 1.
+  First chunk (seq=1): must begin with the command name, e.g. add-polyline (lat,lng);...
+  Subsequent chunks: continue the command string exactly where the previous chunk ended
+  Example: abc123 add-polyline (52.5,13.4);(52.6,1 seq=1
+           abc123 3.5);(52.7,13.6) color=blue seq=2
+
+commit id=<id> total=<N>
+  Reassemble all chunks for the session and execute the command
+  total: total number of expected chunks (used to warn about missing chunks)
+  Example: commit id=abc123 total=2
+
 Tips:
 -----
 - Coordinates: (latitude,longitude) - e.g., (52.5,13.4)

@@ -53,6 +53,32 @@ generate-commands.sh | mapcat
 
 The `-v raw` displays the raw log message with no other metadata fields, `-s Mapcat` flag filters logcat output to show only messages with the `Mapcat` tag, making integration clean and efficient.
 
+### Long Polylines and Polygons
+
+Android's `Log.d` splits lines longer than ~4000 characters into multiple log messages that may arrive out of order. For polylines or polygons with many points, use the chunked protocol to ensure correct reassembly:
+
+```kotlin
+fun logPolyline(coords: List<LatLng>, color: String = "blue") {
+    val id = java.util.UUID.randomUUID().toString().take(8)
+    val chunkSize = 3500  // stay under Log.d limit
+
+    // Build the full command string
+    val coordStr = coords.joinToString(";") { "(${it.latitude},${it.longitude})" }
+    val full = "add-polyline $coordStr color=$color"
+
+    // Split into chunks
+    val chunks = full.chunked(chunkSize)
+
+    Log.d("Mapcat", "begin id=$id")
+    chunks.forEachIndexed { i, chunk ->
+        Log.d("Mapcat", "$id $chunk seq=${i + 1}")
+    }
+    Log.d("Mapcat", "commit id=$id total=${chunks.size}")
+}
+```
+
+mapcat reassembles all chunks (sorted by `seq`) before parsing, so splits can occur anywhere — even mid-coordinate. The original single-line format still works for short commands.
+
 ![adbmapcat](assets/adb_mapcat_1024.gif)
 
 ## Installation

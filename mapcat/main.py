@@ -10,6 +10,7 @@ import json
 from mapcat import server, parser
 from mapcat.state import State
 from mapcat.commands import COMMAND_HANDLERS
+from mapcat.chunker import Chunker
 
 # ANSI color codes
 RED = '\033[91m'
@@ -42,7 +43,8 @@ async def stdin_broadcast_loop(is_tty, state, verbose):
 		verbose: True if OK messages should be printed
 	"""
 	loop = asyncio.get_event_loop()
-	
+	chunker = Chunker()
+
 	try:
 		while True:
 			# Read line
@@ -58,24 +60,87 @@ async def stdin_broadcast_loop(is_tty, state, verbose):
 				line = await loop.run_in_executor(None, sys.stdin.readline)
 				if not line:
 					break
-			
+
 			line = line.strip()
-			
+
 			# Skip empty lines
 			if not line:
 				continue
-			
-			# Parse command
+
+			# --- Chunked protocol ---
+			# Check early (before parse_command) whether the first token is a known session
+			# ID, so it isn't treated as an unknown command.
+			first_token = line.split(None, 1)[0]
+			if chunker.has_session(first_token):
+				rest = line.split(None, 1)[1] if ' ' in line else ''
+				seq, content = _extract_seq(rest)
+				if seq is None:
+					_log_error("chunk", "Missing seq=<N> on chunk line", line)
+					if is_tty:
+						print("< ERROR: Missing seq=<N> on chunk line")
+				else:
+					chunker.add_chunk(first_token, seq, content)
+				continue
+
+			# Parse command normally (handles begin, commit, and all existing commands)
 			parsed = parser.parse_command(line)
 			if not parsed:
 				_log_error("parse", "Invalid command", line)
 				if is_tty:
 					print("< ERROR: Invalid command")
 				continue  # Parser already logged error
-			
+
+			# begin → open session
+			if parsed['cmd'] == 'begin':
+				session_id = parsed['params'].get('id', '')
+				if not session_id:
+					_log_error("begin", "begin requires id=<id>", line)
+					if is_tty:
+						print("< ERROR: begin requires id=<id>")
+				else:
+					chunker.open_session(session_id)
+				continue
+
+			# commit → assemble chunks and dispatch
+			if parsed['cmd'] == 'commit':
+				session_id = parsed['params'].get('id', '')
+				try:
+					total = int(parsed['params'].get('total', 0))
+				except ValueError:
+					_log_error("commit", "total must be a number", line)
+					if is_tty:
+						print("< ERROR: commit total must be a number")
+					continue
+				if not session_id:
+					_log_error("commit", "commit requires id=<id>", line)
+					if is_tty:
+						print("< ERROR: commit requires id=<id>")
+					continue
+				assembled = chunker.commit_session(session_id, total)
+				if assembled:
+					assembled['_original_line'] = line
+					handler = COMMAND_HANDLERS.get(assembled['cmd'])
+					if not handler:
+						_log_error(assembled['cmd'], "Unknown command in assembled chunk", line)
+						if is_tty:
+							print(f"< ERROR: Unknown command '{assembled['cmd']}'")
+						continue
+					message = handler(state, assembled)
+					if message:
+						await server.broadcast(json.dumps(message))
+						if verbose:
+							_log_success(assembled['cmd'], line)
+						if is_tty:
+							print(f"< OK {assembled['cmd']} id={message.get('id', 'N/A')}")
+					elif assembled['cmd'] != 'help':
+						if is_tty:
+							print("< ERROR: Command failed")
+				continue
+			# --- End chunked protocol ---
+
 			# Add original line to parsed command for error reporting
 			parsed['_original_line'] = line
-			
+
 			# Get handler
 			handler = COMMAND_HANDLERS.get(parsed['cmd'])
 			if not handler:
@@ -83,17 +148,17 @@ async def stdin_broadcast_loop(is_tty, state, verbose):
 				if is_tty:
 					print(f"< ERROR: Unknown command '{parsed['cmd']}'")
 				continue
-			
+
 			# Execute handler
 			message = handler(state, parsed)
 			if message:
 				# Broadcast to WebSocket clients
 				await server.broadcast(json.dumps(message))
-				
+
 				# Log success to stdout (if verbose)
 				if verbose:
 					_log_success(parsed['cmd'], line)
-				
+
 				# Echo response in REPL mode
 				if is_tty:
 					print(f"< OK {parsed['cmd']} id={message.get('id', 'N/A')}")
@@ -160,6 +225,23 @@ def main():
 		webbrowser.open(url)
 
 	asyncio.run(runner())
+
+
+def _extract_seq(text: str):
+    """
+    Extract and remove the seq=<N> parameter from a chunk content string.
+
+    Returns:
+        (seq, content_without_seq) on success, or (None, text) if seq is missing/invalid.
+    """
+    import re
+    matches = list(re.finditer(r'(?:^|\s)seq=(\d+)(?:\s|$)', text))
+    if not matches:
+        return None, text
+    match = matches[-1]
+    seq = int(match.group(1))
+    content = (text[:match.start()] + ' ' + text[match.end():]).strip()
+    return seq, content
 
 
 def _log_success(cmd: str, line: str):
