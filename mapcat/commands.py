@@ -44,7 +44,15 @@ def handle_add_point(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dict[
         params['border'] = 2
     else:
         params['border'] = int(params['border'])
-    
+    if 'zorder' not in params:
+        params['zorder'] = 0
+    else:
+        try:
+            params['zorder'] = int(params['zorder'])
+        except (ValueError, TypeError):
+            _log_error("add-point", f"invalid zorder value: {params['zorder']!r}", parsed_cmd)
+            return None
+
     try:
         feature_id = state.add_feature('point', parsed_cmd['coords'], params, feature_id=user_id)
         return {
@@ -97,7 +105,15 @@ def handle_add_polyline(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Di
         params['markerBorder'] = 2
     else:
         params['markerBorder'] = int(params['markerBorder'])
-    
+    if 'zorder' not in params:
+        params['zorder'] = 0
+    else:
+        try:
+            params['zorder'] = int(params['zorder'])
+        except (ValueError, TypeError):
+            _log_error("add-polyline", f"invalid zorder value: {params['zorder']!r}", parsed_cmd)
+            return None
+
     try:
         feature_id = state.add_feature('polyline', parsed_cmd['coords'], params, feature_id=user_id)
         return {
@@ -142,7 +158,15 @@ def handle_add_polygon(state: State, parsed_cmd: Dict[str, Any]) -> Optional[Dic
         params['border'] = 2
     else:
         params['border'] = int(params['border'])
-    
+    if 'zorder' not in params:
+        params['zorder'] = 0
+    else:
+        try:
+            params['zorder'] = int(params['zorder'])
+        except (ValueError, TypeError):
+            _log_error("add-polygon", f"invalid zorder value: {params['zorder']!r}", parsed_cmd)
+            return None
+
     try:
         feature_id = state.add_feature('polygon', parsed_cmd['coords'], params, feature_id=user_id)
         return {
@@ -269,6 +293,7 @@ add-point (lat,lng) [parameters]
     opacity=<0.0-1.0> - Transparency (default: 1.0)
     radius=<pixels>   - Circle radius in pixels (default: 4)
     border=<pixels>   - Border width in pixels (default: 2)
+    zorder=<int>      - Drawing order (default: 0; lower = behind; safe range: -400 to +600)
   Example: add-point (52.5,13.4) color=red label="Home" radius=6 border=3
 
 add-polyline (lat,lng);(lat,lng);... [parameters]
@@ -281,6 +306,7 @@ add-polyline (lat,lng);(lat,lng);... [parameters]
     opacity=<0.0-1.0> - Transparency (default: 1.0)
     markers=<pixels>  - Circle radius at points (0=off, default: 0)
     label=<text>      - Label text
+    zorder=<int>      - Drawing order (default: 0; lower = behind; safe range: -400 to +600)
   Example: add-polyline (52.5,13.4);(52.6,13.5) color=blue width=5
 
 add-polygon (lat,lng);(lat,lng);... [parameters]
@@ -291,6 +317,7 @@ add-polygon (lat,lng);(lat,lng);... [parameters]
     color=<color>     - Fill and border color (default: #007cff)
     opacity=<0.0-1.0> - Fill transparency (default: 1.0)
     label=<text>      - Label text
+    zorder=<int>      - Drawing order (default: 0; lower = behind; safe range: -400 to +600)
   Example: add-polygon (52.1,13.1);(52.2,13.2);(52.15,13.15) color=green opacity=0.5
 
 update-current-position (lat,lng)

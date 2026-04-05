@@ -114,6 +114,19 @@
 
     // Store features by ID
     var features = {};
+
+    // Cache of created Leaflet panes keyed by zorder integer
+    var panesCreated = {};
+
+    function getOrCreatePane(zorder) {
+        var key = 'z' + zorder;
+        if (!panesCreated[key]) {
+            map.createPane(key);
+            map.getPane(key).style.zIndex = 400 + zorder;
+            panesCreated[key] = true;
+        }
+        return key;
+    }
     
     // Current position state
     var currentPositionMarker = null;
@@ -228,11 +241,12 @@
         var label = params.label;
         var tag = params.tag;
         var opacity = params.opacity;
+        var pane = getOrCreatePane(params.zorder ?? 0);
 
         if (msg.type === 'point') {
             var radius = params.radius;
             var border = params.border;
-            
+
             // Validate required parameters
             if (color === undefined || opacity === undefined || radius === undefined || border === undefined) {
                 console.error('Missing required parameters for point:', msg);
@@ -244,14 +258,15 @@
                 }));
                 return;
             }
-            
+
             layer = L.circleMarker(msg.coords, {
                 radius: radius,
                 color: color,
                 fillColor: color,
                 fillOpacity: opacity,
                 opacity: opacity,
-                weight: border
+                weight: border,
+                pane: pane
             }).addTo(map);
             
             // Add hover effect for points
@@ -291,10 +306,11 @@
             var line = L.polyline(msg.coords, {
                 color: color,
                 weight: width,
-                opacity: opacity
+                opacity: opacity,
+                pane: pane
             });
             layerGroup.addLayer(line);
-            
+
             // Add circle markers at each point (if markers > 0)
             if (markerRadius > 0) {
                 msg.coords.forEach(function(coord) {
@@ -304,7 +320,8 @@
                         fillColor: color,
                         fillOpacity: opacity,
                         opacity: opacity,
-                        weight: markerBorder
+                        weight: markerBorder,
+                        pane: pane
                     });
                     layerGroup.addLayer(marker);
                     markers.push(marker);
@@ -346,7 +363,8 @@
                 fillColor: color,
                 fillOpacity: opacity,
                 opacity: opacity,
-                weight: border
+                weight: border,
+                pane: pane
             }).addTo(map);
             
             // Add hover effect for polygons

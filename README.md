@@ -124,6 +124,7 @@ Run `help` in REPL mode to see detailed documentation for all commands.
 - `border=<pixels>` - Point border width (default: `2`)
 - `width=<pixels>` - Line width for polylines (default: `2`)
 - `markers=<pixels>` - Circle radius at polyline points (`0`=off, default: `0`)
+- `zorder=<int>` - Drawing order (default: `0`; lower = behind; safe range: `-400` to `+600`)
 
 ## Features
 

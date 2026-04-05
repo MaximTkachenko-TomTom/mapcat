@@ -27,7 +27,7 @@ def test_handle_add_point():
     assert result['action'] == 'add'
     assert result['type'] == 'point'
     assert result['coords'] == [52.5, 13.4]
-    assert result['params'] == {'color': 'red', 'opacity': 1.0, 'radius': 4, 'border': 2}
+    assert result['params'] == {'color': 'red', 'opacity': 1.0, 'radius': 4, 'border': 2, 'zorder': 0}
     assert 'id' in result
     assert len(state.features) == 1
 
@@ -205,3 +205,53 @@ def test_command_handlers_registry():
     assert 'add-polygon' in COMMAND_HANDLERS
     assert 'remove' in COMMAND_HANDLERS
     assert 'clear' in COMMAND_HANDLERS
+
+
+def test_zorder_default_is_zero():
+    state = State()
+    for handler, coords, cmd in [
+        (handle_add_point, [[52.5, 13.4]], 'add-point'),
+        (handle_add_polyline, [[52.5, 13.4], [52.6, 13.5]], 'add-polyline'),
+        (handle_add_polygon, [[52.1, 13.1], [52.2, 13.2], [52.15, 13.15]], 'add-polygon'),
+    ]:
+        parsed = {'cmd': cmd, 'coords': coords, 'params': {}}
+        result = handler(state, parsed)
+        assert result is not None
+        assert result['params']['zorder'] == 0
+
+
+def test_zorder_coerced_to_int():
+    state = State()
+    parsed = {
+        'cmd': 'add-point',
+        'coords': [[52.5, 13.4]],
+        'params': {'zorder': '-10'}
+    }
+    result = handle_add_point(state, parsed)
+    assert result is not None
+    assert result['params']['zorder'] == -10
+
+
+def test_zorder_preserved_in_params():
+    state = State()
+    parsed = {
+        'cmd': 'add-polyline',
+        'coords': [[52.5, 13.4], [52.6, 13.5]],
+        'params': {'zorder': '5'}
+    }
+    result = handle_add_polyline(state, parsed)
+    assert result is not None
+    assert result['params']['zorder'] == 5
+
+
+def test_zorder_invalid_value_does_not_crash():
+    state = State()
+    for handler, coords, cmd in [
+        (handle_add_point, [[52.5, 13.4]], 'add-point'),
+        (handle_add_polyline, [[52.5, 13.4], [52.6, 13.5]], 'add-polyline'),
+        (handle_add_polygon, [[52.1, 13.1], [52.2, 13.2], [52.15, 13.15]], 'add-polygon'),
+    ]:
+        parsed = {'cmd': cmd, 'coords': coords, 'params': {'zorder': 'bad'}}
+        result = handler(state, parsed)
+        assert result is None
+    assert len(state.features) == 0
