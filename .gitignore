@@ -1,3 +1,5 @@
+.claude/
+.playwright-cli/
 .zed
 tmp
 .venv/

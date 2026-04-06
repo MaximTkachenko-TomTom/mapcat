@@ -701,7 +701,7 @@
         // Create chevron icon (pointing upward, will be rotated)
         var chevronIcon = L.divIcon({
             className: 'current-position-icon',
-            html: '<div style="transform: rotate(' + rotation + 'deg); width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 20px solid #4285F4; margin-left: -10px; margin-top: -10px;"></div>',
+            html: '<svg width="20" height="20" viewBox="0 0 20 20" style="transform: rotate(' + rotation + 'deg); transform-origin: 10px 10px;"><polygon points="10,0 0,20 20,20" fill="#4285F4"/></svg>',
             iconSize: [20, 20],
             iconAnchor: [10, 10]
         });
