@@ -15,16 +15,16 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 
 @functools.lru_cache(maxsize=1)
 def _build_version() -> str:
-    """Return version string 'YYYY-DD-MM.shortHash' from the last git commit."""
+    """Return version string 'YYYY.MM.DD-shortHash' from the last git commit."""
     try:
         result = subprocess.run(
-            ['git', 'log', '-1', '--format=%cd %h', '--date=format:%Y-%m-%d'],
+            ['git', 'log', '-1', '--format=%cd %h', '--date=format:%Y.%m.%d'],
             capture_output=True, text=True, check=True,
             cwd=os.path.dirname(__file__),
         )
         parts = result.stdout.strip().split()
         if len(parts) == 2:
-            return f"{parts[0]}.{parts[1]}"
+            return f"{parts[0]}-{parts[1]}"
     except Exception:
         pass
     return 'unknown'

@@ -2,111 +2,105 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mapcat</title>
+    <title>MapCat</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <style>
-        #map { width: 100vw; height: 100vh; margin: 0; }
-        #controls {
+        body { margin: 0; padding: 0; }
+        #map { width: 100vw; height: 100vh; }
+        /* ── Toolbox ─────────────────────────────────────────────────────────── */
+        #toolbox {
             position: absolute;
             top: 10px;
-            right: 10px;
+            left: 10px;
             z-index: 1000;
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            background: #2a2d2e;
+            border: 1px solid #404445;
+            border-radius: 10px;
+            padding: 10px 12px;
+            min-width: 170px;
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            font-size: 13px;
+            color: #eee;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            user-select: none;
         }
-        #controls button {
-            display: block;
+        .toolbox-logo-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 2px 0 6px;
+        }
+        .toolbox-logo-row svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .toolbox-brand { color: #fff; font-weight: 700; font-size: 13px; }
+        .toolbox-ver { color: rgba(255,255,255,0.3); font-size: 11px; margin-left: auto; }
+        #toolbox hr { border: none; border-top: 1px solid #404445; margin: 6px 0; }
+        .toolbox-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             width: 100%;
-            margin: 5px 0;
-            padding: 8px 12px;
-            background: #007cff;
-            color: white;
+            padding: 5px 4px;
+            background: none;
             border: none;
-            border-radius: 3px;
             cursor: pointer;
-            font-size: 14px;
+            color: rgba(255,255,255,0.65);
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
+            text-align: left;
+            transition: background 0.1s, color 0.1s;
+            box-sizing: border-box;
         }
-        #controls button:hover {
-            background: #0056b3;
+        .toolbox-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .toolbox-btn .dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            flex-shrink: 0;
         }
-        #controls button.active {
-            background: #28a745;
-        }
-        #controls button.clear {
-            background: #dc3545;
-            margin-top: 10px;
-        }
-        #controls button.clear:hover {
-            background: #c82333;
-        }
+        .toolbox-btn.on .dot { background: #4ec94e; box-shadow: 0 0 6px #4ec94e; }
+        .toolbox-btn.danger { color: rgba(255,120,120,0.85); }
+        .toolbox-btn.danger:hover { background: rgba(255,80,80,0.1); color: #ff9090; }
         .leaflet-interactive:hover {
             filter: drop-shadow(0 0 8px currentColor);
             cursor: pointer;
         }
-        #version-badge {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 1000;
-            padding: 8px 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 16px;
-            color: white;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.25);
-            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-            user-select: none;
-            pointer-events: none;
-        }
-        #version-badge .logo {
-            width: 32px;
-            height: 32px;
-            flex-shrink: 0;
-        }
-        #version-badge .brand {
-            font-weight: 700;
-        }
-        #version-badge .ver {
-            color: white;
-            font-weight: 400;
-            text-transform: uppercase;
-        }
+        .leaflet-control-zoom { margin-bottom: 20px !important; margin-right: 10px !important; }
     </style>
 </head>
 <body>
-    <div id="controls">
-        <button id="autofocusBtn" class="active">Auto-focus: ON</button>
-        <button id="followPositionBtn">Follow Position: OFF</button>
-        <button id="clearBtn" class="clear">Clear</button>
-    </div>
-    <div id="version-badge">
-        <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <mask id="version-logo-mask">
-                    <rect width="100" height="100" fill="white"/>
-                    <path fill="black" d="M50 90 L18 52 L30 16 L50 30 L70 16 L82 52 Z"/>
-                    <circle cx="50" cy="52" r="12" fill="white"/>
-                </mask>
-            </defs>
-            <circle cx="50" cy="50" r="48" fill="white" mask="url(#version-logo-mask)"/>
-        </svg>
-        <span class="brand">MapCat</span>
-        <span class="ver">__VERSION__</span>
+    <div id="toolbox">
+        <div class="toolbox-logo-row">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <mask id="toolbox-logo-mask">
+                        <rect width="100" height="100" fill="white"/>
+                        <path fill="black" d="M50 90 L18 52 L30 16 L50 30 L70 16 L82 52 Z"/>
+                        <circle cx="50" cy="52" r="0" fill="white"/>
+                    </mask>
+                </defs>
+                <circle cx="50" cy="50" r="48" fill="white" mask="url(#toolbox-logo-mask)"/>
+            </svg>
+            <span class="toolbox-brand">MapCat</span>
+            <span class="toolbox-ver">__VERSION__</span>
+        </div>
+        <hr>
+        <button id="autofocusBtn" class="toolbox-btn on">
+            Auto-focus <span class="dot"></span>
+        </button>
+        <button id="followPositionBtn" class="toolbox-btn">
+            Follow current position <span class="dot"></span>
+        </button>
+        <hr>
+        <button id="clearBtn" class="toolbox-btn danger">Clear</button>
     </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
     // Initialize map
-    var map = L.map('map').setView([52.527913, 13.416302], 15);
+    var map = L.map('map', { zoomControl: false }).setView([52.527913, 13.416302], 15);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© OpenStreetMap'
@@ -140,27 +134,15 @@
     var autofocusBtn = document.getElementById('autofocusBtn');
     autofocusBtn.addEventListener('click', function() {
         autofocus = !autofocus;
-        if (autofocus) {
-            autofocusBtn.textContent = 'Auto-focus: ON';
-            autofocusBtn.className = 'active';
-        } else {
-            autofocusBtn.textContent = 'Auto-focus: OFF';
-            autofocusBtn.className = '';
-        }
+        autofocusBtn.classList.toggle('on', autofocus);
     });
-    
+
     var followPositionBtn = document.getElementById('followPositionBtn');
     followPositionBtn.addEventListener('click', function() {
         followPosition = !followPosition;
-        if (followPosition) {
-            followPositionBtn.textContent = 'Follow Position: ON';
-            followPositionBtn.className = 'active';
-        } else {
-            followPositionBtn.textContent = 'Follow Position: OFF';
-            followPositionBtn.className = '';
-        }
+        followPositionBtn.classList.toggle('on', followPosition);
     });
-    
+
     var clearBtn = document.getElementById('clearBtn');
     clearBtn.addEventListener('click', function() {
         clearAllFeatures();
@@ -176,13 +158,11 @@
     map.on('dragstart', function() {
         if (autofocus) {
             autofocus = false;
-            autofocusBtn.textContent = 'Auto-focus: OFF';
-            autofocusBtn.className = '';
+            autofocusBtn.classList.remove('on');
         }
         if (followPosition) {
             followPosition = false;
-            followPositionBtn.textContent = 'Follow Position: OFF';
-            followPositionBtn.className = '';
+            followPositionBtn.classList.remove('on');
         }
     });
 
